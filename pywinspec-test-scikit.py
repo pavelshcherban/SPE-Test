@@ -18,13 +18,16 @@ class SpeProcessor:
 
   def select_files(self):
       self.filenames = filedialog.askopenfilenames(initialdir=".", title="Select a File", filetypes=(("Text files","*.SPE"), ("all files","*.*")))
-      self.set_label_filenames()
       self.read_files()
+      self.set_label_filenames()
 
 
   def set_label_filenames(self):
       # self.label_filenames.set(self.filenames[0])
       self.label_filenames.set("\n".join(self.filenames))
+      # self.label_image = 
+      for filename in self.filenames:
+        ttk.Radiobutton(self.frame, text=filename, variable=self.label_image, value=filename)
 
 
   def show_colormaps(self):
@@ -132,6 +135,7 @@ class SpeProcessor:
 
 
   def read_files(self):
+    self.images = []
     # Extract SPE files to img array
     for filename in self.filenames:
       img = SpeImage(filename)
@@ -209,8 +213,8 @@ class SpeProcessor:
   def __init__(self, root):
     root.title("SPE File Analysis")
 
-    mainframe = ttk.Frame(root, padding="3 3 12 12")
-    mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+    self.mainframe = ttk.Frame(root, padding="3 3 12 12")
+    self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
@@ -232,19 +236,20 @@ class SpeProcessor:
     self.label_threshold = StringVar()
     self.label_threshold.set('minimum')
 
-    ttk.Button(mainframe, text="Select Files", command=self.select_files).grid(row=1, column=1, sticky=W)
-    ttk.Label(mainframe, textvariable=self.label_filenames).grid(row=1, column=2, sticky=W)
-    ttk.Label(mainframe, textvariable=self.label_image).grid(row=1, column=3, sticky=W)
-    ttk.Button(mainframe, text="Plot Thrsholds",command=self.show_thresholds).grid(row=2, column=1, sticky=W)
-    ttk.Button(mainframe, text="Apply Threshold",command=self.apply_threshold).grid(row=3, column=1, sticky=W)
-    ttk.Label(mainframe, textvariable=self.label_threshold).grid(row=3, column=2, sticky=W)
-    ttk.Button(mainframe, text="Show Colormaps",command=self.show_colormaps).grid(row=4, column=1, sticky=W)
-    ttk.Label(mainframe, textvariable=self.label_cmap_bnir).grid(row=4, column=2, sticky=W)
-    ttk.Label(mainframe, textvariable=self.label_cmap_fnir).grid(row=4, column=3, sticky=W)
-    ttk.Button(mainframe, text="MatPlot", command=self.matplot).grid(row=5, column=1, sticky=W)
-    ttk.Button(mainframe, text="Output All tiff",command=self.output_all_tiff).grid(row=6, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Select Files", command=self.select_files).grid(row=1, column=1, sticky=W)
+    ttk.Label(self.mainframe, textvariable=self.label_filenames).grid(row=1, column=2, sticky=W)
+    ttk.Label(self.mainframe, textvariable=self.label_image).grid(row=1, column=3, sticky=W)
+    self.frame = ttk.Frame(self.mainframe).grid(row=1, column=4, sticky=W)
+    ttk.Button(self.mainframe, text="Plot Thrsholds",command=self.show_thresholds).grid(row=2, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Apply Threshold",command=self.apply_threshold).grid(row=3, column=1, sticky=W)
+    ttk.Label(self.mainframe, textvariable=self.label_threshold).grid(row=3, column=2, sticky=W)
+    ttk.Button(self.mainframe, text="Show Colormaps",command=self.show_colormaps).grid(row=4, column=1, sticky=W)
+    ttk.Label(self.mainframe, textvariable=self.label_cmap_bnir).grid(row=4, column=2, sticky=W)
+    ttk.Label(self.mainframe, textvariable=self.label_cmap_fnir).grid(row=4, column=3, sticky=W)
+    ttk.Button(self.mainframe, text="MatPlot", command=self.matplot).grid(row=5, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Output All tiff",command=self.output_all_tiff).grid(row=6, column=1, sticky=W)
 
-    for child in mainframe.winfo_children():
+    for child in self.mainframe.winfo_children():
       child.grid_configure(padx=5, pady=5)
  
 

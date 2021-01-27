@@ -10,7 +10,7 @@ class WinSpecFrame:
     self.__width, self.__height = image.shape
     self.__exposure = exp_sec
     # is this median filtering useful?
-    self.__image_raw = ndimage.median_filter(image, size=3)/exp_sec
+    self.__image_raw = np.fliplr(ndimage.median_filter(image, size=3)/exp_sec)
     # self.__image_raw_mod
   
     #protected properties

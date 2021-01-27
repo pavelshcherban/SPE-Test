@@ -69,7 +69,7 @@ class SpeProcessor:
       grid = ImageGrid(fig, 111, nrows_ncols=(nrows, nrows), axes_pad=(0.1,0.3))
 
       for ax, name in zip(grid, cmap_list):
-          ax.imshow(wsf.image_raw(), cmap=plt.get_cmap(name))
+          ax.imshow(wsf.image_raw(), cmap=plt.get_cmap(name), origin='lower')
           ax.set_title(name, fontsize=10)
           ax.set_axis_off()
 
@@ -93,7 +93,7 @@ class SpeProcessor:
       sm = cm.ScalarMappable(cmap=cmap)
       img_cm = sm.to_rgba(img.get_frame().image_raw_mod())
       print("Outputing ", out_path, " ...")
-      plt.imsave(out_path, img_cm)
+      plt.imsave(out_path, img_cm, origin='lower')
     
 
   def output_comb_tiff(self):
@@ -122,10 +122,10 @@ class SpeProcessor:
     fig, axes = plt.subplots(ncols=2, figsize=(8, 3))
     ax = axes.ravel()
 
-    ax[0].imshow(image, cmap='jet')
+    ax[0].imshow(image, cmap='jet', origin='lower')
     ax[0].set_title('Original image')
 
-    ax[1].imshow(binary, cmap='jet')
+    ax[1].imshow(binary, cmap='jet', origin='lower')
     ax[1].set_title('Result')
 
     for a in ax:
@@ -148,6 +148,11 @@ class SpeProcessor:
 
 
   def matplot(self):
+    def extent():
+      # return (-0.5, wsf.width()-0.5, -0.5, wsf.height()-0.5)
+      # return (-0.5, wsf.height()-0.5, wsf.width()-0.5, -0.5)
+      return (-0.5, wsf.height()-0.5, -0.5, wsf.width()-0.5)
+
     def redraw_threshold():
       ax_xgraph.clear()
       ax_xgraph.set_ylim([wsf.min_val(), wsf.max_val()])
@@ -156,15 +161,15 @@ class SpeProcessor:
     
     def redraw_xpixel():
       ax_xpixel.clear()
-      ax_xpixel.imshow(wsf.image_raw(), cmap=self.label_cmap_fnir.get())
+      ax_xpixel.imshow(wsf.image_raw(), cmap=self.label_cmap_fnir.get(), origin='lower')
       ax_xpixel.axhline(y=wsf.x_co, linestyle = '-', linewidth=2, color='firebrick')
-
+    
     def redraw_mod():
       ax_mod.clear()
       sm = cm.ScalarMappable(cmap=self.label_cmap_fnir.get())
       img = sm.to_rgba(wsf.image_raw_mod())
-      ax_mod.imshow(img)
-      # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()))
+      ax_mod.imshow(img, origin='lower')
+      # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
     def update_xpixel(val):
       print("Updating xpixel to ", val)

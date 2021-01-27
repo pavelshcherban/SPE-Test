@@ -1,7 +1,8 @@
 from speimage import SpeImage
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Slider
+from matplotlib.widgets import Button as mpButton
 import matplotlib.image as mpimg
 from matplotlib import cm
 from skimage.draw import polygon, polygon2mask
@@ -148,10 +149,8 @@ class SpeProcessor:
 
 
   def matplot(self):
-    def extent():
-      # return (-0.5, wsf.width()-0.5, -0.5, wsf.height()-0.5)
-      # return (-0.5, wsf.height()-0.5, wsf.width()-0.5, -0.5)
-      return (-0.5, wsf.height()-0.5, -0.5, wsf.width()-0.5)
+    image = self.images[self.image_i]
+    wsf = image.get_frame()
 
     def redraw_threshold():
       ax_xgraph.clear()
@@ -161,6 +160,7 @@ class SpeProcessor:
     
     def redraw_xpixel():
       ax_xpixel.clear()
+      ax_xpixel.set_title("Frame #"+str(image.frame_i))
       ax_xpixel.imshow(wsf.image_raw(), cmap=self.label_cmap_fnir.get(), origin='lower')
       ax_xpixel.axhline(y=wsf.x_co, linestyle = '-', linewidth=2, color='firebrick')
     
@@ -171,11 +171,34 @@ class SpeProcessor:
       ax_mod.imshow(img, origin='lower')
       # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
+    def redraw_frame():
+        nonlocal wsf
+        wsf = image.get_frame()
+        redraw_xpixel()
+        redraw_threshold()
+        redraw_mod()
+
+    def frame_next(event):
+      if image.frame_i < image.header.NumFrames-1:
+        print("Updating to next frame",)
+        image.frame_i += 1
+        redraw_frame()
+      else:
+        print("Last frame already selected")
+
+    def frame_prev(event):
+      if image.frame_i > 0:
+        print("Updating to prev frame",)
+        image.frame_i -= 1
+        redraw_frame()
+      else:
+        print("First frame already selected")
+
     def update_xpixel(val):
       print("Updating xpixel to ", val)
       wsf.x_co = val
-      redraw_threshold()
       redraw_xpixel()
+      redraw_threshold()
 
     def update_threshold(val):
       print("Updating threshold to ", val)
@@ -192,13 +215,15 @@ class SpeProcessor:
       ))
       redraw_mod()
 
-    wsf = self.images[self.image_i].get_frame()
-
     # create initial plot
     fig, (ax_xpixel, ax_xgraph, ax_mod) = plt.subplots(1, 3)
+    axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
+    axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
     fig.tight_layout(h_pad=2)
 
     # plot slider
+    bnext = mpButton(axnext, 'Next')
+    bprev = mpButton(axprev, 'Previous')
     spixel = Slider(ax_xpixel, "x pixel", 0, wsf.width()-1, valinit=wsf.x_co, valstep=1, orientation='vertical')
     threshold = Slider(ax_xgraph, "threshold", ceil(wsf.min_val()), floor(wsf.max_val()), valinit=wsf.threshold, valstep=1, orientation='vertical')
 
@@ -209,6 +234,8 @@ class SpeProcessor:
     redraw_threshold()
     redraw_xpixel()
     
+    bnext.on_clicked(frame_next)
+    bprev.on_clicked(frame_prev)
     spixel.on_changed(update_xpixel)
     threshold.on_changed(update_threshold)
 
@@ -237,7 +264,7 @@ class SpeProcessor:
     self.label_cmap_bnir = StringVar()
     self.label_cmap_bnir.set('gray')
     self.label_cmap_fnir = StringVar()
-    self.label_cmap_fnir.set('viridis')
+    self.label_cmap_fnir.set('gist_earth')
     self.label_threshold = StringVar()
     self.label_threshold.set('minimum')
 

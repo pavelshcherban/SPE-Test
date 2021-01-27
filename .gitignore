@@ -1,0 +1,13 @@
+/.venv
+/.vscode
+/funcImageProcessM.py
+/images
+/Matlab
+/notes.txt
+/outputMouse1_CTXDSPHICG_belly_t1_bNIR.SPE.gif
+/outputMouse1_CTXDSPHICG_belly_t1_fNIR.SPE.gif
+/plot.py
+/pywinspec-test.py
+/rc-add.py
+/spe-test.py
+/__pycache__

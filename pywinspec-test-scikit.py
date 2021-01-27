@@ -140,6 +140,7 @@ class SpeProcessor:
       print(' - dtype:', img.get_frame().image_raw().dtype)
       print(' - min:', img.get_frame().min_val())
       print(' - max:', img.get_frame().max_val())
+    self.label_image.set(self.filenames[self.image_i])
 
 
   def matplot(self):
@@ -214,16 +215,16 @@ class SpeProcessor:
     root.rowconfigure(0, weight=1)
 
     # properties
-    self.filenames = ['images\Mouse2_CTXDSPHICG_full_t20h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t48h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t96h_fNIR.SPE']
+    # self.filenames = ['images\Mouse2_CTXDSPHICG_full_t20h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t48h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t96h_fNIR.SPE']
+    self.filenames = []
     self.images = []
     self.image_i = 0
-    self.read_files()
+    # self.read_files()
 
     # label variables
     self.label_filenames = StringVar()
     self.set_label_filenames()
     self.label_image = StringVar()
-    self.label_image.set(self.filenames[self.image_i])
     self.label_cmap_bnir = StringVar()
     self.label_cmap_bnir.set('gray')
     self.label_cmap_fnir = StringVar()

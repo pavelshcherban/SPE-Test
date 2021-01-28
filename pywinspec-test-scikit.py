@@ -1,3 +1,4 @@
+from spematplot import spematplot
 from speimage import SpeImage
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +17,6 @@ from math import sqrt, ceil, floor
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 class SpeProcessor:
-
   def select_files(self):
       self.filenames = filedialog.askopenfilenames(initialdir=".", title="Select a File", filetypes=(("Text files","*.SPE"), ("all files","*.*")))
       self.read_files()
@@ -137,6 +137,7 @@ class SpeProcessor:
 
   def read_files(self):
     self.images = []
+    self.matplots = []
     # Extract SPE files to img array
     for filename in self.filenames:
       img = SpeImage(filename)
@@ -145,105 +146,15 @@ class SpeProcessor:
       print(' - dtype:', img.get_frame().image_raw().dtype)
       print(' - min:', img.get_frame().min_val())
       print(' - max:', img.get_frame().max_val())
+      self.matplots.append(spematplot(img, self.label_cmap_fnir.get()))
     self.label_image.set(self.filenames[self.image_i])
 
-
-  def matplot(self):
-    image = self.images[self.image_i]
-    wsf = image.get_frame()
-
-    def redraw_threshold():
-      ax_xgraph.clear()
-      ax_xgraph.set_ylim([wsf.min_val(), wsf.max_val()])
-      ax_xgraph.plot(wsf.xgraph())
-      ax_xgraph.axhline(y=wsf.threshold, linestyle = '-', linewidth=2, color='firebrick')
-    
-    def redraw_xpixel():
-      ax_xpixel.clear()
-      ax_xpixel.set_title("Frame #"+str(image.frame_i))
-      ax_xpixel.imshow(wsf.image_raw(), cmap=self.label_cmap_fnir.get(), origin='lower')
-      ax_xpixel.axhline(y=wsf.x_co, linestyle = '-', linewidth=2, color='firebrick')
-    
-    def redraw_mod():
-      ax_mod.clear()
-      sm = cm.ScalarMappable(cmap=self.label_cmap_fnir.get())
-      img = sm.to_rgba(wsf.image_raw_mod())
-      ax_mod.imshow(img, origin='lower')
-      # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
-
-    def redraw_frame():
-        nonlocal wsf
-        wsf = image.get_frame()
-        redraw_xpixel()
-        redraw_threshold()
-        redraw_mod()
-
-    def frame_next(event):
-      if image.frame_i < image.header.NumFrames-1:
-        print("Updating to next frame",)
-        image.frame_i += 1
-        redraw_frame()
-      else:
-        print("Last frame already selected")
-
-    def frame_prev(event):
-      if image.frame_i > 0:
-        print("Updating to prev frame",)
-        image.frame_i -= 1
-        redraw_frame()
-      else:
-        print("First frame already selected")
-
-    def update_xpixel(val):
-      print("Updating xpixel to ", val)
-      wsf.x_co = val
-      redraw_xpixel()
-      redraw_threshold()
-
-    def update_threshold(val):
-      print("Updating threshold to ", val)
-      wsf.threshold = val
-      redraw_threshold()
-      redraw_mod()
-
-    def update_mask():
-      print("Updating map to ")
-      wsf.mask_poly = np.array((
-        (100,100),
-        (200,100),
-        (200,200),
-      ))
-      redraw_mod()
-
-    # create initial plot
-    fig, (ax_xpixel, ax_xgraph, ax_mod) = plt.subplots(1, 3)
-    axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
-    axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
-    fig.tight_layout(h_pad=2)
-
-    # plot slider
-    bnext = mpButton(axnext, 'Next')
-    bprev = mpButton(axprev, 'Previous')
-    spixel = Slider(ax_xpixel, "x pixel", 0, wsf.width()-1, valinit=wsf.x_co, valstep=1, orientation='vertical')
-    threshold = Slider(ax_xgraph, "threshold", ceil(wsf.min_val()), floor(wsf.max_val()), valinit=wsf.threshold, valstep=1, orientation='vertical')
-
-    # temporary
-    # update_mask()
-
-    redraw_mod()
-    redraw_threshold()
-    redraw_xpixel()
-    
-    bnext.on_clicked(frame_next)
-    bprev.on_clicked(frame_prev)
-    spixel.on_changed(update_xpixel)
-    threshold.on_changed(update_threshold)
-
-    plt.show()
-
+  def show_matplots(self):
+    for mp in self.matplots:
+      mp.show()
 
   def __init__(self, root):
-    root.title("SPE File Analysis")
+    root.title("SPE File Analyzer")
 
     self.mainframe = ttk.Frame(root, padding="3 3 12 12")
     self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -254,6 +165,7 @@ class SpeProcessor:
     # self.filenames = ['images\Mouse2_CTXDSPHICG_full_t20h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t48h_fNIR.SPE', 'images\Mouse2_CTXDSPHICG_full_t96h_fNIR.SPE']
     self.filenames = []
     self.images = []
+    self.matplots = []
     self.image_i = 0
     # self.read_files()
 
@@ -272,13 +184,13 @@ class SpeProcessor:
     ttk.Label(self.mainframe, textvariable=self.label_filenames).grid(row=1, column=2, sticky=W)
     ttk.Label(self.mainframe, textvariable=self.label_image).grid(row=1, column=3, sticky=W)
     self.frame = ttk.Frame(self.mainframe).grid(row=1, column=4, sticky=W)
-    ttk.Button(self.mainframe, text="Plot Thrsholds",command=self.show_thresholds).grid(row=2, column=1, sticky=W)
-    ttk.Button(self.mainframe, text="Apply Threshold",command=self.apply_threshold).grid(row=3, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Unfinished - Plot Thresholds",command=self.show_thresholds).grid(row=2, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Unfinished - Apply Threshold",command=self.apply_threshold).grid(row=3, column=1, sticky=W)
     ttk.Label(self.mainframe, textvariable=self.label_threshold).grid(row=3, column=2, sticky=W)
-    ttk.Button(self.mainframe, text="Show Colormaps",command=self.show_colormaps).grid(row=4, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Select Fluorescent Colormap",command=self.show_colormaps).grid(row=4, column=1, sticky=W)
     ttk.Label(self.mainframe, textvariable=self.label_cmap_bnir).grid(row=4, column=2, sticky=W)
     ttk.Label(self.mainframe, textvariable=self.label_cmap_fnir).grid(row=4, column=3, sticky=W)
-    ttk.Button(self.mainframe, text="MatPlot", command=self.matplot).grid(row=5, column=1, sticky=W)
+    ttk.Button(self.mainframe, text="Show MatPlots", command=self.show_matplots).grid(row=5, column=1, sticky=W)
     ttk.Button(self.mainframe, text="Output All tiff",command=self.output_all_tiff).grid(row=6, column=1, sticky=W)
 
     for child in self.mainframe.winfo_children():

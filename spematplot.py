@@ -1,19 +1,19 @@
-from speimage import SpeImage
+# from speimage import SpeImage
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.widgets import Button as mpButton
-import matplotlib.image as mpimg
+from matplotlib.figure import Figure
+# import matplotlib.image as mpimg
 from matplotlib import cm
-from skimage.draw import polygon, polygon2mask
-from skimage import color, util
-from skimage import filters
-from WinSpecFrame import WinSpecFrame
-from tkinter import *
-from tkinter import filedialog, ttk
-from os import path
+# from skimage.draw import polygon, polygon2mask
+# from skimage import color, util
+# from skimage import filters
+# from WinSpecFrame import WinSpecFrame
+# from tkinter import *
+# from tkinter import filedialog, ttk
+# from os import path
 from math import sqrt, ceil, floor
-from mpl_toolkits.axes_grid1 import ImageGrid
+# from mpl_toolkits.axes_grid1 import ImageGrid
 
 class spematplot():
   def redraw_threshold(self):
@@ -79,22 +79,24 @@ class spematplot():
     self.redraw_mod()
 
   def show(self):
-    plt.show()
+    self.fig.show()
 
   def __init__(self, image, cmap):
     self.cmap = cmap
     self.image = image
     self.wsf = self.image.get_frame()
 
+    self.fig = Figure()
+
     # create initial plot
-    self.fig, (self.ax_xpixel, self.ax_xgraph, self.ax_mod) = plt.subplots(1, 3)
-    self.axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
-    self.axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
+    (self.ax_xpixel, self.ax_xgraph, self.ax_mod) = self.fig.subplots(1,3)
+    self.ax_prev = self.fig.add_axes([0.7, 0.05, 0.1, 0.075])
+    self.ax_next = self.fig.add_axes([0.81, 0.05, 0.1, 0.075])
     self.fig.tight_layout(h_pad=2)
 
     # plot slider
-    self.bnext = mpButton(self.axnext, 'Next')
-    self.bprev = mpButton(self.axprev, 'Previous')
+    self.bnext = mpButton(self.ax_next, 'Next')
+    self.bprev = mpButton(self.ax_prev, 'Previous')
     self.spixel = Slider(self.ax_xpixel, "x pixel", 0, self.wsf.width()-1, valinit=self.wsf.x_co, valstep=1, orientation='vertical')
     self.threshold = Slider(self.ax_xgraph, "threshold", ceil(self.wsf.min_val()), floor(self.wsf.max_val()), valinit=self.wsf.threshold, valstep=1, orientation='vertical')
 
@@ -109,5 +111,3 @@ class spematplot():
     self.bprev.on_clicked(self.frame_prev)
     self.spixel.on_changed(self.update_xpixel)
     self.threshold.on_changed(self.update_threshold)
-
-    # plt.show()

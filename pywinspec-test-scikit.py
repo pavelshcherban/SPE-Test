@@ -1,6 +1,7 @@
 from spematplot import spematplot
-from speimage import SpeImage
 from WinSpecFrame import WinSpecFrame
+
+from pyWinSpec.winspec import SpeFile
 
 from os import path
 from math import sqrt, ceil, floor
@@ -54,10 +55,12 @@ class SpeAnalyzer:
     """Extract SPE files to img array."""
     for filename in filenames:
       self.files[filename] = {
-        'img': SpeImage(filename),
+        'img': SpeFile(filename),
         'threshold': IntVar(),
         'cmap': StringVar(),
         'NIR': "",
+        'frame_i': 0,
+        "x_i": 0,
         }
       self.files[filename]['threshold'].set(self.label_threshold.get())
       if filename.endswith('bNIR.SPE'):
@@ -101,30 +104,24 @@ class SpeAnalyzer:
   def show_matplot(self, filename):
     """Displays matplot based on spe file."""
     if filename in self.windows:
-      self.windows[filename].lift()
+      self.windows[filename]['window'].lift()
     else:
-      self.windows[filename] = Toplevel(root)
-      self.windows[filename].title(filename)
-      self.windows[filename].protocol("WM_DELETE_WINDOW", lambda f=filename: self.destroy_window(f))
+      self.windows[filename] = {'window':Toplevel(root)}
+      self.windows[filename]['window'].title(filename)
+      self.windows[filename]['window'].protocol("WM_DELETE_WINDOW", lambda f=filename: self.destroy_window(f))
 
-      fig = Figure(figsize=(5, 4), dpi=100)
-      t = np.arange(0, 3, .01)
-      ax = fig.add_subplot(111)
-      ax.plot(t, 2 * np.sin(2 * np.pi * t))
-      ax.set_title("TAETABDG")
-
-      canvas = FigureCanvasTkAgg(fig, master=self.windows[filename])
-      canvas.draw()
-      canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
-
-      toolbar = NavigationToolbar2Tk(canvas, self.windows[filename])
-      toolbar.update()
-      canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+      self.windows[filename]['matplot'] = spematplot(self.files[filename], self.windows[filename]['window'])
 
   def destroy_window(self, filename):
-    self.windows[filename].destroy()
+    """Destroys tkinter window."""
+    self.windows[filename]['window'].destroy()
     del self.windows[filename]
 
+  def on_key_press(self, event):
+    if event.inaxes:
+      print(event.inaxes.get_title())
+    # key_press_handler(event, canvas, toolbar)
+  
   def show_colormaps(self):
 
     wsf = self.images[self.image_i].get_frame()

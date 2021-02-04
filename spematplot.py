@@ -1,25 +1,16 @@
-# from speimage import SpeImage
-import numpy as np
-from matplotlib.widgets import Slider
-from matplotlib.widgets import Button as mpButton
-from matplotlib.figure import Figure
-# import matplotlib.image as mpimg
-from matplotlib import cm
-# from skimage.draw import polygon, polygon2mask
-# from skimage import color, util
-# from skimage import filters
-# from WinSpecFrame import WinSpecFrame
-# from tkinter import *
-# from tkinter import filedialog, ttk
-# from os import path
-from math import sqrt, ceil, floor
-# from mpl_toolkits.axes_grid1 import ImageGrid
-from scipy import ndimage
-# from profilehooks import profile
+import tkinter as tk
+from math import ceil, floor
 
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+import numpy as np
+from matplotlib import cm
 from matplotlib.backend_bases import key_press_handler
-from tkinter import *
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+from matplotlib.widgets import Button as mpButton
+from matplotlib.widgets import Slider
+from scipy import ndimage
+
 
 class spematplot():
   def update_frame_next(self, event):
@@ -99,17 +90,13 @@ class spematplot():
     ))
     self.redraw_mod()
 
-  def show(self):
-    self.fig.show()
+  # def show(self):
+  #   self.fig.show()
 
   def on_key_press(self, event):
     if event.inaxes:
       print(event.inaxes.get_title())
     # key_press_handler(event, canvas, toolbar)
-
-  def build_figure(self):
-    """Builds the subplots of the matplot"""
-    return
 
   def __init__(self, file, window):
     self.file = file
@@ -117,11 +104,11 @@ class spematplot():
     self.iwidth, self.iheight = self.frame.shape
 
     self.fig = Figure()
-    self.canvas = FigureCanvasTkAgg(self.fig, master=window)
-    self.canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
-    self.toolbar = NavigationToolbar2Tk(self.canvas, window)
+    self.canvas = FigureCanvasTkAgg(self.fig, master=window['toplevel'])
+    self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    self.toolbar = NavigationToolbar2Tk(self.canvas, window['toplevel'])
     self.toolbar.update()
-    self.canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+    self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
     # create initial plot
     (self.ax_orig, self.ax_xgraph, self.ax_mod) = self.fig.subplots(1,3)

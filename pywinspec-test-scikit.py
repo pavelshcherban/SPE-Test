@@ -1,28 +1,25 @@
+import tkinter as tk
+from os import path
+from tkinter import filedialog, ttk
+
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import cm
+from matplotlib.backend_bases import button_press_handler
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+from matplotlib.widgets import Button as mpButton
+from matplotlib.widgets import Slider
+from mpl_toolkits.axes_grid1 import ImageGrid
+from skimage import color, filters, util
+from skimage.draw import polygon, polygon2mask
+
+from colorplot import colorplot
+from pyWinSpec.winspec import SpeFile
 from spematplot import spematplot
 from WinSpecFrame import WinSpecFrame
-
-from pyWinSpec.winspec import SpeFile
-
-from os import path
-from math import sqrt, ceil, floor
-
-import numpy as np
-
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.widgets import Slider, Button as mpButton
-import matplotlib.image as mpimg
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
-from matplotlib.backend_bases import button_press_handler
-from matplotlib.figure import Figure
-from mpl_toolkits.axes_grid1 import ImageGrid
-
-from skimage.draw import polygon, polygon2mask
-from skimage import color, util
-from skimage import filters
-
-from tkinter import *
-from tkinter import filedialog, ttk
 
 # global variables
 cmaps = [('Perceptually Uniform Sequential', [
@@ -54,10 +51,11 @@ class SpeAnalyzer:
   def read_files(self, filenames):
     """Extract SPE files to img array."""
     for filename in filenames:
+      self.windows[filename] = {}
       self.files[filename] = {
         'img': SpeFile(filename),
-        'threshold': IntVar(),
-        'cmap': StringVar(),
+        'threshold': tk.IntVar(),
+        'cmap': tk.StringVar(),
         'NIR': "",
         'frame_i': 0,
         "x_i": 0,
@@ -88,82 +86,57 @@ class SpeAnalyzer:
       cm = ttk.Combobox(details, textvariable=f['cmap'], values=self.cmap_combo)
       cm.grid(row=3, column=1)
       cm.state(['readonly'])
+      ttk.Button(details, text="Select from Colorplots", command=lambda f=filename: self.show_colorplots(f)).grid(row=3, column=2)
       
       for child in details.winfo_children():
-        child.grid_configure(padx=5, pady=5, sticky=W)
+        child.grid_configure(padx=5, pady=5, sticky=tk.W)
 
       buttons = ttk.Frame(self.listframe)
       buttons.grid(row=r, column=1)
       ttk.Button(buttons, text="Show Matplot", command=lambda f=filename: self.show_matplot(f)).grid(row=0, column=0)
 
       for child in buttons.winfo_children():
-        child.grid_configure(padx=5, pady=5, sticky=N+W)
+        child.grid_configure(padx=5, pady=5, sticky=tk.N+tk.W)
 
-      ttk.Separator(self.listframe, orient=HORIZONTAL).grid(row=r+1, column=0, sticky=W+E)
+      ttk.Separator(self.listframe, orient=tk.HORIZONTAL).grid(row=r+1, column=0, sticky=tk.W+tk.E)
 
   def show_matplot(self, filename):
     """Displays matplot based on spe file."""
-    if filename in self.windows:
-      self.windows[filename]['window'].lift()
+    # first check to see if there are any windows for this file.
+    if 'spematplot' in self.windows[filename]:
+      self.windows[filename]['spematplot']['toplevel'].lift()
     else:
-      self.windows[filename] = {'window':Toplevel(root)}
-      self.windows[filename]['window'].title(filename)
-      self.windows[filename]['window'].protocol("WM_DELETE_WINDOW", lambda f=filename: self.destroy_window(f))
+      self.windows[filename]['spematplot'] = {}
+      self.windows[filename]['spematplot']['toplevel'] = tk.Toplevel(root)
+      self.windows[filename]['spematplot']['toplevel'].title(filename)
+      self.windows[filename]['spematplot']['toplevel'].protocol("WM_DELETE_WINDOW", lambda f=filename: self.destroy_window(f,'spematplot'))
 
-      self.windows[filename]['matplot'] = spematplot(self.files[filename], self.windows[filename]['window'])
+      self.windows[filename]['spematplot']['matplot'] = spematplot(self.files[filename], self.windows[filename]['spematplot'])
+  
+  def show_colorplots(self, filename):
+    """Displays colormap matplots based on spe file."""
+    for cmap_category, cmap_list in cmaps:
+      # first check to see if there are any windows for this file.
+      if cmap_category in self.windows[filename]:
+        self.windows[filename][cmap_category]['toplevel'].lift()
+      else:
+        self.windows[filename][cmap_category] = {}
+        self.windows[filename][cmap_category]['toplevel'] = tk.Toplevel(root)
+        self.windows[filename][cmap_category]['toplevel'].title(filename +' -- ' + cmap_category)
+        self.windows[filename][cmap_category]['toplevel'].protocol("WM_DELETE_WINDOW", lambda f=filename, c=cmap_category: self.destroy_window(f,c))
 
-  def destroy_window(self, filename):
+        self.windows[filename][cmap_category]['matplot'] = colorplot(self.files[filename], self.windows[filename][cmap_category], cmap_list, cmap_category)
+
+  def destroy_window(self, filename, window):
     """Destroys tkinter window."""
-    self.windows[filename]['window'].destroy()
-    del self.windows[filename]
+    self.windows[filename][window]['toplevel'].destroy()
+    del self.windows[filename][window]
 
   def on_key_press(self, event):
     if event.inaxes:
       print(event.inaxes.get_title())
     # key_press_handler(event, canvas, toolbar)
   
-  def show_colormaps(self):
-
-    wsf = self.images[self.image_i].get_frame()
-    figs = []
-
-    def onclick(event):
-      # fix "AttributeError: 'NoneType' object has no attribute 'get_title'"
-      cmap = event.inaxes.get_title()
-      print('%s click: inaxes=%s, button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-            ('double' if event.dblclick else 'single', cmap, event.button,
-            event.x, event.y, event.xdata, event.ydata))
-      self.label_cmap_fnir.set(cmap)
-      for fig in figs:
-        fig.destroy()
-
-    def plot_color_gradients(cmap_category, cmap_list):
-      nrows = ceil(sqrt(len(cmap_list)))
-      tl = Toplevel(root)
-      fig = Figure()
-      fig.suptitle(cmap_category + ' colormaps')
-      grid = ImageGrid(fig, 111, nrows_ncols=(nrows, nrows), axes_pad=(0.1,0.3))
-
-      canvas = FigureCanvasTkAgg(fig, master=tl)  # A tk.DrawingArea.
-      canvas.draw()
-      canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-
-      toolbar = NavigationToolbar2Tk(canvas, tl)
-      toolbar.update()
-      canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-
-      for ax, name in zip(grid, cmap_list):
-          ax.imshow(wsf.image_raw(), cmap=plt.get_cmap(name), origin='lower')
-          ax.set_title(name, fontsize=10)
-          ax.set_axis_off()
-
-      cid = fig.canvas.mpl_connect('button_press_event', onclick)
-      figs.append(tl)
-
-    for cmap_category, cmap_list in cmaps:
-      plot_color_gradients(cmap_category, cmap_list)
-
-
   def output_all_tiff(self):
     for img in self.images:
       filehead, filename = path.split(img.path)
@@ -219,7 +192,7 @@ class SpeAnalyzer:
   def show_matplots(self):
     # for mp in self.matplots:
     #   mp.show()
-    t = Toplevel(root)
+    t = tk.Toplevel(root)
 
   def __init__(self, root):
     # properties
@@ -227,10 +200,10 @@ class SpeAnalyzer:
     self.windows = {}
 
     # Root Window label variables
-    self.label_filenames = StringVar()
-    self.label_cmap_bnir = StringVar()
-    self.label_cmap_fnir = StringVar()
-    self.label_threshold = IntVar()
+    self.label_filenames = tk.StringVar()
+    self.label_cmap_bnir = tk.StringVar()
+    self.label_cmap_fnir = tk.StringVar()
+    self.label_threshold = tk.IntVar()
 
     self.label_cmap_bnir.set('gray')
     self.label_cmap_fnir.set('gist_earth')
@@ -243,11 +216,11 @@ class SpeAnalyzer:
 
     # Main function frame
     self.mainframe = ttk.Frame(root, padding='5', relief='ridge')
-    self.mainframe.grid(row=0, column=0, sticky=N+W)
+    self.mainframe.grid(row=0, column=0, sticky=tk.N+tk.W)
     # ttk.Separator(self.mainframe, orient=VERTICAL)
 
     ttk.Button(self.mainframe, text="Select Files", command=self.select_files).grid(row=0, column=0)
-    ttk.Button(self.mainframe, text="Select Fluorescent Colormap",command=self.show_colormaps).grid(row=1, column=0)
+    # ttk.Button(self.mainframe, text="Select Fluorescent Colormap",command=self.show_colormaps).grid(row=1, column=0)
     ttk.Label(self.mainframe, textvariable=self.label_cmap_bnir).grid(row=1, column=1)
     ttk.Label(self.mainframe, textvariable=self.label_cmap_fnir).grid(row=1, column=2)
     ttk.Button(self.mainframe, text="Show MatPlots", command=self.show_matplots).grid(row=2, column=0)
@@ -258,17 +231,17 @@ class SpeAnalyzer:
     ttk.Label(self.mainframe, textvariable=self.label_threshold).grid(row=101, column=1)
 
     for child in self.mainframe.winfo_children():
-      child.grid_configure(padx=5, pady=5, sticky=W)
+      child.grid_configure(padx=5, pady=5, sticky=tk.W)
 
     # File listing frame
     self.listframe = ttk.Frame(root, padding='5', relief='ridge')
-    self.listframe.grid(row=0, column=1, sticky=N+W) 
+    self.listframe.grid(row=0, column=1, sticky=tk.N+tk.W) 
 
     # self.create_cmap_combo()
     self.cmap_combo = [ cm for group, cms in cmaps for cm in cms ]
     self.cmap_combo.sort()
 
 
-root = Tk()
+root = tk.Tk()
 SpeAnalyzer(root)
 root.mainloop()

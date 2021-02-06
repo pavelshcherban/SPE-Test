@@ -16,8 +16,9 @@ class colorplot():
     """Registers the selection of a colormap plot"""
     if event.inaxes:
       cmap = event.inaxes.get_title()
-      # print('inaxes=%s' %(cmap))
-      self.file['cmap'].set(cmap)
+      print('inaxes=%s' %(cmap))
+      if cmap:
+        self.file['cmap'].set(cmap)
 
   def __init__(self, file, window, cmaps, cmap_category):
     self.file = file

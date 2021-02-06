@@ -15,114 +15,104 @@ import time
 
 class spematplot():
 
-    def update(self):
-        self.orig_title.set_text("Frame #" + str(self.file['frame_i']))
-        # self.x_i_line.set_ydata(np.full((self.iwidth,),self.file['x_i']))
-        self.x_i_line.set_ydata(self.file['x_i'])
-        self.xgraph_plot.set_ydata(self.img[self.file['x_i']])
-        self.xgraph_line.set_ydata(self.file['threshold'].get())
-        self.xgraph_title.set_text("Strength at x=" + str(self.file['x_i']))
-        self.bm.update()
+    # def redraw_mod(self):
+    #     """Redraw the modified image animated element"""
+    #     # self.ax_mod.clear()
+    #     sm = cm.ScalarMappable(cmap=self.file['cmap'].get())
+    #     img = sm.to_rgba(self.img)
+    #     self.mod.make_image(img)
+    #     # self.ax_mod.imshow(self.threshold_poly)
+    #     # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
     def draw_figure(self):
-        """Draws the Figure on the tk canvas."""
+        """Draw the Figure on the tk canvas and set blitting.
+
+        This should be called when the original img frame changes.
+        It is more expensive than update(), which uses blitting to redraw
+        everything else.
+        """
+        self.img = self.file['img']
+        # self.bm = BlitManager(self.canvas)
+        # self.clear_axes()
         self.draw_frame()
-        self.draw_x_i()
         self.draw_threshold()
         self.draw_mod()
-        self.canvas.draw()
-        self.canvas.flush_events()
-        time.sleep(0.1)
-        # print("bm Update")
         self.update()
+        self.canvas.draw_idle()
+        self.canvas.flush_events()
+        # time.sleep(0.1)
+        # self.bm.on_draw()
+        # self.update()
+
+    # def clear_axes(self):
+    #     """Clear all axes in the matplot."""
+    #     for axis in self.axes:
+    #         axis.clear()
 
     def draw_frame(self):
-        # self.ax_orig.clear()
+        """Draw the original image frame, pre-blitting."""
         self.orig_title = self.ax_orig.set_title(
             "",
-            animated = True,
+            # animated = True,
         )
-        self.bm.add_artist(self.orig_title)
-        self.ax_orig.imshow(
+        # self.bm.add_artist(self.orig_title)
+        if hasattr(self, 'orig'):
+            self.orig.remove()
+        self.orig = self.ax_orig.imshow(
             self.img,
             cmap = self.file['cmap'].get(),
             origin = 'lower',
         )
 
-    def draw_x_i(self):
-        self.x_i_line = self.ax_orig.axhline(
-            y = self.file['x_i'],
-            linestyle = '-',
-            linewidth = 2,
-            color = 'firebrick',
-            animated = True,
-        )
-        self.bm.add_artist(self.x_i_line)
-
     def draw_threshold(self):
-        # self.ax_xgraph.clear()
+        """Draw the threshold graph axis, pre-blitting."""
+        self.xgraph_title = self.ax_xgraph.set_title(
+            '',
+            # animated = True,
+        )
+        # self.threshold.poly.draw(self.canvas.get_renderer())
+        # self.bm.add_artist(self.xgraph_title)
         self.ax_xgraph.set_ylim([np.amin(self.img), np.amax(self.img)])
-        (self.xgraph_plot,) = self.ax_xgraph.plot(
-            self.img[self.file['x_i']],
-            animated = True,
-        )
-        self.bm.add_artist(self.xgraph_plot)
-        self.xgraph_line = self.ax_xgraph.axhline(
-            y = self.file['threshold'].get(), 
-            linestyle = '-', 
-            linewidth = 2, 
-            color = 'firebrick',
-            animated = True,
-        )
-        self.bm.add_artist(self.xgraph_line)
+        if hasattr(self, 'xgraph_plot'):
+            self.xgraph_plot.set_ydata(self.img[self.file['x_i']])
+        else:
+            (self.xgraph_plot,) = self.ax_xgraph.plot(
+                self.img[self.file['x_i']],
+                # animated = True,
+            )
+        # self.bm.add_artist(self.xgraph_plot)
+        # self.xgraph_line = self.ax_xgraph.axhline(
+        #     y = self.file['threshold'].get(), 
+        #     linestyle = '-', 
+        #     linewidth = 2, 
+        #     color = 'firebrick',
+        #     animated = True,
+        # )
+        # self.bm.add_artist(self.xgraph_line)
 
     def draw_mod(self):
-        # self.ax_mod.clear()
+        """Draw the modified image, pre-blitting."""
         sm = cm.ScalarMappable(cmap=self.file['cmap'].get())
         img = sm.to_rgba(self.img)
-        self.ax_mod.imshow(img, origin='lower')
+        if hasattr(self, 'mod'):
+            self.mod.remove()
+        self.mod = self.ax_mod.imshow(
+            img, 
+            origin = 'lower', 
+            # animated = True,
+        )
+        # self.bm.add_artist(self.mod)
         # self.ax_mod.imshow(self.threshold_poly)
         # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
-    # def update_frame_next(self, event):
-    #     """Updates the frame selection for the file to the next frame."""
-    #     if self.file['frame_i'] < self.file['spefile'].header.NumFrames-1:
-    #         print("Updating to next frame", self.file['frame_i']+1)
-    #         self.file['frame_i'] += 1
-    #         self.file['img'] = process_image(self.file)
-    #         self.redraw_frame()
-    #     else:
-    #         print("Last frame already selected")
-
-    # def update_frame_prev(self, event):
-    #     """Updates the frame selection for the file to the previous frame."""
-    #     if self.file['frame_i'] > 0:
-    #         print("Updating to prev frame", self.file['frame_i']-1)
-    #         self.file['frame_i'] -= 1
-    #         self.file['img'] = process_image(self.file)
-    #         self.redraw_frame()
-    #     else:
-    #         print("First frame already selected")
-
-    def redraw_frame(self):
-        # print("redraw_frame")
-        self.img = self.file['img']
-        self.draw_orig()
-        self.draw_threshold()
-        self.draw_mod()
-        self.draw_figure()
-
-    # def update_orig(self, val):
-    #     print("Updating x_i to ", val)
-    #     self.file['x_i'] = val
-    #     self.draw_orig()
-    #     self.draw_threshold()
-
-    # def update_threshold(self, val):
-    #     print("Updating threshold to ", val)
-    #     self.file['threshold'].set(val)
-    #     self.draw_threshold()
-    #     self.draw_mod()
+    def update(self):
+        """Redraw the animated elements of the matplot"""
+        self.orig_title.set_text("Frame #" + str(self.file['frame_i']))
+        self.xgraph_plot.set_ydata(self.img[self.file['x_i']])
+        # self.xgraph_line.set_ydata(self.file['threshold'].get())
+        self.xgraph_title.set_text("Strength at x=" + str(self.file['x_i']))
+        # self.redraw_mod()
+        # self.bm.update()
 
     def update_mask(self):
         print("Updating map to ")
@@ -132,9 +122,6 @@ class spematplot():
             (200, 200),
         ))
         self.draw_mod()
-
-    # def show(self):
-    #   self.fig.show()
 
     # def onclick(self, event):
     #     """Registers the selection of a polygon"""
@@ -156,8 +143,7 @@ class spematplot():
 
     def __init__(self, file, window):
         self.file = file
-        self.img = self.file['img']
-        self.iwidth, self.iheight = self.img.shape
+        self.iwidth, self.iheight = file['img'].shape
 
         self.fig = Figure()
         self.canvas = FigureCanvasTkAgg(self.fig, master=window['toplevel'])
@@ -167,52 +153,42 @@ class spematplot():
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         # create initial plot
-        self.bm = BlitManager(self.canvas)
-        (self.ax_orig, self.ax_xgraph, self.ax_mod) = self.fig.subplots(1, 3)
-        self.xgraph_title = self.ax_xgraph.set_title(
-            '',
-            animated = True,
-        )
-        self.bm.add_artist(self.xgraph_title)
+        self.axes = self.fig.subplots(1, 3)
+        (self.ax_orig, self.ax_xgraph, self.ax_mod) = self.axes
         self.ax_mod.set_title("Modified Image")
         self.ax_pframe = self.fig.add_axes([0.7, 0.05, 0.1, 0.075])
         self.ax_nframe = self.fig.add_axes([0.81, 0.05, 0.1, 0.075])
         # self.fig.tight_layout(h_pad=2)
 
         # plot slider
-        self.b_nframe = mpButton(self.ax_nframe, 'Next Frame')
-        self.b_pframe = mpButton(self.ax_pframe, 'Previous Frame')
         self.x_i = Slider(
             self.ax_orig,
             "",
             0,
-            self.iwidth-1,
-            valinit=file['x_i'],
-            valstep=1,
-            orientation='vertical',
+            self.iwidth - 1,
+            valinit = self.file['x_i'],
+            valstep = 1,
+            orientation = 'vertical',
             fill = False,
+            linestyle = '-',
+            linewidth = 2,
+            color = 'firebrick',
         )
         self.threshold = Slider(
             self.ax_xgraph,
             "", 
-            ceil(np.amin(self.img)),
-            floor(np.amax(self.img)),
-            valinit=file['threshold'].get(),
-            valstep=1,
-            orientation='vertical',
+            # these need to be changed based on Frame
+            ceil(np.amin(file['img'])),
+            floor(np.amax(file['img'])),
+            valinit = self.file['threshold'].get(),
+            valstep = 1,
+            orientation = 'vertical',
             fill = False,
+            linestyle = '-', 
+            linewidth = 2, 
+            color = 'firebrick',    
         )
-
-        # # temporary
-        # # update_mask()
-
-        # self.draw_mod()
-        # self.draw_threshold()
-        # self.draw_orig()
-
-        # self.b_nframe.on_clicked(self.update_frame_next)
-        # self.b_pframe.on_clicked(self.update_frame_prev)
-        # self.x_i.on_changed(self.update_orig)
-        # self.threshold.on_changed(self.update_threshold)
+        self.b_nframe = mpButton(self.ax_nframe, 'Next Frame')
+        self.b_pframe = mpButton(self.ax_pframe, 'Previous Frame')
 
         self.draw_figure()

@@ -181,7 +181,9 @@ class SpeAnalyzer:
             print("Updating to next frame", f['frame_i'])
             img = SpeAnalyzer.process_image(f['spefile'], f['frame_i'])
             f['img'] = img
-            self.windows[filename]['spematplot']['matplot'].update()
+            # self.disconnect_matplot(filename)
+            self.windows[filename]['spematplot']['matplot'].draw_figure()
+            # self.connect_matplot(filename)
         else:
             print("Last frame already selected.")
 
@@ -193,7 +195,9 @@ class SpeAnalyzer:
             print("Updating to prev frame", f['frame_i'])
             img = SpeAnalyzer.process_image(f['spefile'], f['frame_i'])
             f['img'] = img
-            self.windows[filename]['spematplot']['matplot'].update()
+            # self.disconnect_matplot(filename)
+            self.windows[filename]['spematplot']['matplot'].draw_figure()
+            # self.connect_matplot(filename)
         else:
             print("First frame already selected.")
 
@@ -201,13 +205,13 @@ class SpeAnalyzer:
         f = self.files[filename]
         print("Updating x_i to ", val)
         f['x_i'] = val
-        self.windows[filename]['spematplot']['matplot'].update()
+        self.windows[filename]['spematplot']['matplot'].draw_figure()
 
     def update_threshold(self, val, filename):
         f = self.files[filename]
         print("Updating threshold to ", val)
         f['threshold'].set(val)
-        self.windows[filename]['spematplot']['matplot'].update()
+        self.windows[filename]['spematplot']['matplot'].draw_figure()
 
     def show_matplot(self, filename):
         """Displays matplot based on spe file."""
@@ -234,13 +238,10 @@ class SpeAnalyzer:
             matplot.b_pframe.on_clicked(
                 lambda e, f=filename: self.update_frame_prev(f)
             )
-            matplot.x_i.on_changed(
-                lambda v, f=filename: self.update_x_i(v, f)
-            )
-            matplot.threshold.on_changed(
-                lambda v, f=filename: self.update_threshold(v, f)
-            )
-            # matplot.canvas.mpl_connect('button_press_event', lambda event: self.canvas._tkcanvas.focus_set())
+            # matplot.canvas.mpl_connect(
+            #     'button_press_event', 
+            #     lambda event: self.canvas._tkcanvas.focus_set()
+            # )
             matplot.canvas.mpl_connect(
                 "button_press_event",
                 lambda e, f=filename: self.matplot_press(e, f)
@@ -250,6 +251,27 @@ class SpeAnalyzer:
                 lambda e, f=filename: self.matplot_motion(e, f)
             )
             self.windows[filename]['spematplot']['matplot'] = matplot
+            self.windows[filename]['spematplot']['connections'] = []
+            self.connect_matplot(filename)
+
+    # def disconnect_matplot(self, filename):
+    #     """Disconnect the animated components of the matplot from the backend."""
+    #     matplot = self.windows[filename]['spematplot']['matplot']
+    #     connections = self.windows[filename]['spematplot']['connections']
+    #     for id in connections:
+    #         matplot.canvas.mpl_disconnect(id)
+    #     connections.clear()
+
+    def connect_matplot(self, filename):
+        """Connect the animated components of the matplot to the backend."""
+        matplot = self.windows[filename]['spematplot']['matplot']
+        connections = self.windows[filename]['spematplot']['connections']
+        connections.append(matplot.x_i.on_changed(
+            lambda v, f=filename: self.update_x_i(v, f)
+        ))
+        connections.append(matplot.threshold.on_changed(
+            lambda v, f=filename: self.update_threshold(v, f)
+        ))
 
     def show_colorplots(self, filename):
         """Displays colormap matplots based on spe file."""
@@ -272,6 +294,7 @@ class SpeAnalyzer:
     def destroy_window(self, window):
         """Destroys tkinter window."""
         window['toplevel'].destroy()
+        del window['matplot']
         del window
 
     def on_key_press(self, event):

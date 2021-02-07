@@ -1,6 +1,6 @@
 import tkinter as tk
 from os import path
-from tkinter import filedialog, ttk
+from tkinter import IntVar, filedialog, ttk
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -72,36 +72,68 @@ class SpeAnalyzer:
         )
         self.read_files(filenames)
 
+    def draw_matplot(self, filename):
+        """Update matplot if it is available."""
+        if 'spematplot' in self.windows[filename]:
+                self.windows[filename]['spematplot']['matplot'].draw_figure()
+
+    def update_frame(self, filename):
+        """Update frame-related components."""
+        file = self.files[filename]
+        file['img'] = SpeAnalyzer.process_image(
+            file['spefile'], 
+            file['frame_i'].get()
+        )
+        if 'spematplot' in self.windows[filename]:
+                self.windows[filename]['spematplot']['matplot'].draw_figure()
+
     def read_files(self, filenames):
         """Extract SPE files to spe object."""
         for filename in filenames:
             spefile = SpeFile(filename)
-            frame_i = 0
-            img = SpeAnalyzer.process_image(spefile, frame_i)
+            frame_i = tk.IntVar()
             # xgrpah = img[45]
             # xtest = np.full((256,), 45)
-            threshold_poly = np.zeros_like(img)
             threshold = tk.IntVar()
-            threshold.set(self.root_threshold.get())
             cmap = tk.StringVar()
-            if filename.endswith('bNIR.SPE'):
-                cmap.set(self.root_cmap_bnir.get())
-                nir = 'bright field'
-            else:
-                cmap.set(self.root_cmap_fnir.get())
-                nir = 'flourescence'
+            x_i = tk.IntVar()
             # Update instance dicts.
             self.windows[filename] = {}
             self.files[filename] = {
                 'spefile': spefile,
-                'img': img,
                 'threshold': threshold,
-                'threshold_poly': threshold_poly,
                 'cmap': cmap,
-                'NIR': nir,
+                'NIR': '',
                 'frame_i': frame_i,
-                "x_i": 0,
+                "x_i": x_i,
             }
+            frame_i.trace_add(
+                'write',
+                lambda p0,p1,p2,f=filename: self.update_frame(f)
+            )
+            frame_i.set(0)
+            threshold_poly = np.zeros_like(self.files[filename]['img'])
+            self.files[filename]['threshold_poly'] = threshold_poly
+            threshold.set(self.root_threshold.get())
+            threshold.trace_add(
+                'write',
+                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+            )
+            if filename.endswith('bNIR.SPE'):
+                cmap.set(self.root_cmap_bnir.get())
+                self.files[filename]['NIR'] = 'bright field'
+            else:
+                cmap.set(self.root_cmap_fnir.get())
+                self.files[filename]['NIR'] = 'flourescence'
+            cmap.trace_add(
+                'write',
+                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+            )
+            x_i.set(0)
+            x_i.trace_add(
+                'write',
+                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+            )
         self.create_listframe()
 
     def create_listframe(self):
@@ -114,25 +146,27 @@ class SpeAnalyzer:
             ttk.Label(details, text=filename).grid(row=0, column=1)
             ttk.Label(details, text="SPE type: ").grid(row=1, column=0)
             ttk.Label(details, text=f['NIR']).grid(row=1, column=1)
+            ttk.Label(details, text="Current Frame: ").grid(row=2, column=0)
+            ttk.Label(details, textvariable=f['frame_i']).grid(row=2, column=1)
             ttk.Label(details, text="Current threshold: ").grid(
-                row=2, column=0)
+                row=3, column=0)
             ttk.Label(details, textvariable=f['threshold']).grid(
-                row=2, column=1)
-            ttk.Label(details, text="Current colormap: ").grid(row=3, column=0)
+                row=3, column=1)
+            ttk.Label(details, text="Current colormap: ").grid(row=4, column=0)
             # ttk.Label(details, textvariable=f['cmap']).grid(row=3, column=1)
             cm = ttk.Combobox(
                 details,
                 textvariable=f['cmap'],
                 values=self.cmap_combo
             )
-            cm.grid(row=3, column=1)
+            cm.grid(row=4, column=1)
             cm.state(['readonly'])
             button_color = ttk.Button(
                 details,
                 text="Select from Colorplots",
                 command=lambda f=filename: self.show_colorplots(f),
             )
-            button_color.grid(row=3, column=2)
+            button_color.grid(row=4, column=2)
 
             for child in details.winfo_children():
                 child.grid_configure(padx=5, pady=5, sticky=tk.W)
@@ -176,42 +210,32 @@ class SpeAnalyzer:
     def update_frame_next(self, filename):
         """Updates the frame selection for the file to the next frame."""
         f = self.files[filename]
-        if f['frame_i'] + 1 < f['spefile'].header.NumFrames:
-            f['frame_i'] += 1
-            print("Updating to next frame", f['frame_i'])
-            img = SpeAnalyzer.process_image(f['spefile'], f['frame_i'])
-            f['img'] = img
-            # self.disconnect_matplot(filename)
-            self.windows[filename]['spematplot']['matplot'].draw_figure()
-            # self.connect_matplot(filename)
+        frame_i = f['frame_i'].get()
+        if frame_i + 1 < f['spefile'].header.NumFrames:
+            print("Updating to next frame", frame_i)
+            f['frame_i'].set(frame_i + 1)
         else:
             print("Last frame already selected.")
 
     def update_frame_prev(self, filename):
         """Updates the frame selection for the file to the previous frame."""
         f = self.files[filename]
-        if f['frame_i'] > 0:
-            f['frame_i'] -= 1
-            print("Updating to prev frame", f['frame_i'])
-            img = SpeAnalyzer.process_image(f['spefile'], f['frame_i'])
-            f['img'] = img
-            # self.disconnect_matplot(filename)
-            self.windows[filename]['spematplot']['matplot'].draw_figure()
-            # self.connect_matplot(filename)
+        frame_i = f['frame_i'].get()
+        if frame_i > 0:
+            print("Updating to prev frame", frame_i)
+            f['frame_i'].set(frame_i - 1)
         else:
             print("First frame already selected.")
 
     def update_x_i(self, val, filename):
         f = self.files[filename]
         print("Updating x_i to ", val)
-        f['x_i'] = val
-        self.windows[filename]['spematplot']['matplot'].draw_figure()
+        f['x_i'].set(val)
 
     def update_threshold(self, val, filename):
         f = self.files[filename]
         print("Updating threshold to ", val)
         f['threshold'].set(val)
-        self.windows[filename]['spematplot']['matplot'].draw_figure()
 
     def show_matplot(self, filename):
         """Displays matplot based on spe file."""
@@ -224,7 +248,7 @@ class SpeAnalyzer:
             window['toplevel'].title(filename)
             window['toplevel'].protocol(
                 "WM_DELETE_WINDOW",
-                lambda w=window: self.destroy_window(w)
+                lambda f=filename, c='spematplot': self.destroy_window(f, c)
             )
             self.windows[filename]['spematplot'] = window
             # Create Matplot and connect to backend.
@@ -273,6 +297,17 @@ class SpeAnalyzer:
             lambda v, f=filename: self.update_threshold(v, f)
         ))
 
+    def colorplot_press(self, event, filename):
+        """Register the selection of a colormap plot"""
+        if event.inaxes and event.inaxes.get_title():
+            cmap = event.inaxes.get_title()
+            print('inaxes=%s' %(cmap))
+            self.files[filename]['cmap'].set(cmap)
+            # Destroy any outstanding cmap windows.
+            for cmap_category, cmap_list in CMAPS:
+                if cmap_category in self.windows[filename]:
+                    self.destroy_window(filename, cmap_category)
+
     def show_colorplots(self, filename):
         """Displays colormap matplots based on spe file."""
         for cmap_category, cmap_list in CMAPS:
@@ -280,22 +315,37 @@ class SpeAnalyzer:
             if cmap_category in self.windows[filename]:
                 self.windows[filename][cmap_category]['toplevel'].lift()
             else:
-                self.windows[filename][cmap_category] = {}
-                self.windows[filename][cmap_category]['toplevel'] = tk.Toplevel(
-                    root)
-                self.windows[filename][cmap_category]['toplevel'].title(
-                    filename + ' -- ' + cmap_category)
-                self.windows[filename][cmap_category]['toplevel'].protocol(
-                    "WM_DELETE_WINDOW", lambda f=filename, c=cmap_category: self.destroy_window(f, c))
+                # Create tk window that will hold matplot.
+                window = {'toplevel': tk.Toplevel(root)}
+                window['toplevel'].title(filename + ' -- ' + cmap_category)
+                window['toplevel'].protocol(
+                    "WM_DELETE_WINDOW",
+                    lambda f=filename, c=cmap_category: self.destroy_window(f, c)
+                )
+                self.windows[filename][cmap_category] = window
+                # Create Matplot and connect to backend.
+                cplot = colorplot(
+                    self.files[filename], 
+                    self.windows[filename][cmap_category], 
+                    cmap_list, 
+                    cmap_category
+                )
+                # matplot.canvas.mpl_connect(
+                #     'button_press_event', 
+                #     lambda event: self.canvas._tkcanvas.focus_set()
+                # )
+                cplot.canvas.mpl_connect(
+                    "button_press_event",
+                    lambda e, f=filename: self.colorplot_press(e, f)
+                )
+                self.windows[filename][cmap_category]['matplot'] = cplot
 
-                self.windows[filename][cmap_category]['matplot'] = colorplot(
-                    self.files[filename], self.windows[filename][cmap_category], cmap_list, cmap_category)
-
-    def destroy_window(self, window):
+    def destroy_window(self, filename, windowname):
         """Destroys tkinter window."""
+        window = self.windows[filename][windowname]
         window['toplevel'].destroy()
-        del window['matplot']
-        del window
+        # del window['matplot']
+        del self.windows[filename][windowname]
 
     def on_key_press(self, event):
         if event.inaxes:

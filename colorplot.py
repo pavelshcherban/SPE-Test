@@ -12,17 +12,11 @@ from scipy import ndimage
 
 
 class colorplot():
-  def onclick(self, event):
-    """Registers the selection of a colormap plot"""
-    if event.inaxes:
-      cmap = event.inaxes.get_title()
-      print('inaxes=%s' %(cmap))
-      if cmap:
-        self.file['cmap'].set(cmap)
+
 
   def __init__(self, file, window, cmaps, cmap_category):
     self.file = file
-    self.frame = np.fliplr(ndimage.median_filter(self.file['img'].data[self.file['frame_i']], size=3)/self.file['img'].header.exp_sec)
+    self.img = self.file['img']
     nrows = ceil(sqrt(len(cmaps)))
 
     self.fig = Figure()
@@ -36,15 +30,12 @@ class colorplot():
     self.fig.suptitle(cmap_category + ' colormaps')
 
     for ax, name in zip(self.grid, cmaps):
-        ax.imshow(self.frame, cmap=plt.get_cmap(name), origin='lower')
+        ax.imshow(self.img, cmap=plt.get_cmap(name), origin='lower')
         ax.set_title(name, fontsize=10)
         ax.set_axis_off()
 
     # # temporary
     # # update_mask()
-
-    self.canvas.mpl_connect('button_press_event', lambda event:self.canvas._tkcanvas.focus_set())
-    self.canvas.mpl_connect("button_press_event", self.onclick)
     
-    self.canvas.draw_idle()
-    self.canvas.flush_events()
+    # self.canvas.draw_idle()
+    # self.canvas.flush_events()

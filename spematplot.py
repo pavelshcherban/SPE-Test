@@ -74,10 +74,10 @@ class spematplot():
         # self.bm.add_artist(self.xgraph_title)
         self.ax_xgraph.set_ylim([np.amin(self.img), np.amax(self.img)])
         if hasattr(self, 'xgraph_plot'):
-            self.xgraph_plot.set_ydata(self.img[self.file['x_i']])
+            self.xgraph_plot.set_ydata(self.img[self.file['x_i'].get()])
         else:
             (self.xgraph_plot,) = self.ax_xgraph.plot(
-                self.img[self.file['x_i']],
+                self.img[self.file['x_i'].get()],
                 # animated = True,
             )
         # self.bm.add_artist(self.xgraph_plot)
@@ -107,10 +107,10 @@ class spematplot():
 
     def update(self):
         """Redraw the animated elements of the matplot"""
-        self.orig_title.set_text("Frame #" + str(self.file['frame_i']))
-        self.xgraph_plot.set_ydata(self.img[self.file['x_i']])
+        self.orig_title.set_text("Frame #" + str(self.file['frame_i'].get()))
+        self.xgraph_plot.set_ydata(self.img[self.file['x_i'].get()])
         # self.xgraph_line.set_ydata(self.file['threshold'].get())
-        self.xgraph_title.set_text("Strength at x=" + str(self.file['x_i']))
+        self.xgraph_title.set_text("Strength at x=" + str(self.file['x_i'].get()))
         # self.redraw_mod()
         # self.bm.update()
 
@@ -166,7 +166,7 @@ class spematplot():
             "",
             0,
             self.iwidth - 1,
-            valinit = self.file['x_i'],
+            valinit = self.file['x_i'].get(),
             valstep = 1,
             orientation = 'vertical',
             fill = False,

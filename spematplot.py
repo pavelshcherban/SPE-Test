@@ -22,7 +22,6 @@ class spematplot():
     #     img = sm.to_rgba(self.img)
     #     self.mod.make_image(img)
     #     # self.ax_mod.imshow(self.threshold_poly)
-    #     # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
     def draw_figure(self):
         """Draw the Figure on the tk canvas and set blitting.
@@ -38,7 +37,8 @@ class spematplot():
         self.draw_threshold()
         self.draw_mod()
         self.update()
-        self.canvas.draw_idle()
+        # self.canvas.draw_idle()
+        self.canvas.draw()
         self.canvas.flush_events()
         # time.sleep(0.1)
         # self.bm.on_draw()
@@ -93,7 +93,7 @@ class spematplot():
     def draw_mod(self):
         """Draw the modified image, pre-blitting."""
         sm = cm.ScalarMappable(cmap=self.file['cmap'].get())
-        img = sm.to_rgba(self.img)
+        img = sm.to_rgba(self.file['mod'])
         if hasattr(self, 'mod'):
             self.mod.remove()
         self.mod = self.ax_mod.imshow(
@@ -103,7 +103,6 @@ class spematplot():
         )
         # self.bm.add_artist(self.mod)
         # self.ax_mod.imshow(self.threshold_poly)
-        # ax_mod.imshow(wsf.image_raw(), cmap='jet', clim=(wsf.threshold, wsf.max_val()), origin='lower')
 
     def update(self):
         """Redraw the animated elements of the matplot"""
@@ -156,8 +155,10 @@ class spematplot():
         self.axes = self.fig.subplots(1, 3)
         (self.ax_orig, self.ax_xgraph, self.ax_mod) = self.axes
         self.ax_mod.set_title("Modified Image")
-        self.ax_pframe = self.fig.add_axes([0.7, 0.05, 0.1, 0.075])
-        self.ax_nframe = self.fig.add_axes([0.81, 0.05, 0.1, 0.075])
+        self.ax_pframe = self.fig.add_axes([0.12, 0.05, 0.1, 0.05])
+        self.ax_nframe = self.fig.add_axes([0.23, 0.05, 0.1, 0.05])
+        self.ax_poly = self.fig.add_axes([0.7, 0.05, 0.2, 0.05])
+        self.poly = None
         # self.fig.tight_layout(h_pad=2)
 
         # plot slider
@@ -177,8 +178,8 @@ class spematplot():
         self.threshold = Slider(
             self.ax_xgraph,
             "", 
-            # these need to be changed based on Frame
-            ceil(np.amin(file['img'])),
+            # these need to be changed based on Frame?
+            0,
             floor(np.amax(file['img'])),
             valinit = self.file['threshold'].get(),
             valstep = 1,
@@ -189,6 +190,7 @@ class spematplot():
             color = 'firebrick',    
         )
         self.b_nframe = mpButton(self.ax_nframe, 'Next Frame')
-        self.b_pframe = mpButton(self.ax_pframe, 'Previous Frame')
+        self.b_pframe = mpButton(self.ax_pframe, 'Prev Frame')
+        self.b_poly = mpButton(self.ax_poly, 'Select Region')
 
         self.draw_figure()

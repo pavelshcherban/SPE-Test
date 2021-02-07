@@ -11,7 +11,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button as mpButton
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, PolygonSelector
 from mpl_toolkits.axes_grid1 import ImageGrid
 from scipy import ndimage
 from skimage import color, filters, util
@@ -63,6 +63,16 @@ class SpeAnalyzer:
         img = np.fliplr(img/spe_data.header.exp_sec)
         return img
 
+    def update_mod(self, filename):
+        f = self.files[filename]
+        img = f['img']
+        mod = np.where(img > f['threshold'].get(), img, 0)
+        f['mod'] = mod
+        # ax_mod.imshow(wsf.image_raw(),
+        #  cmap='jet', 
+        # clim=(wsf.threshold, wsf.max_val()), origin='lower')
+
+        
     def select_files(self):
         """Allows user to manually select SPE files."""
         filenames = filedialog.askopenfilenames(
@@ -84,8 +94,8 @@ class SpeAnalyzer:
             file['spefile'], 
             file['frame_i'].get()
         )
-        if 'spematplot' in self.windows[filename]:
-                self.windows[filename]['spematplot']['matplot'].draw_figure()
+        self.update_mod(filename)
+        self.draw_matplot(filename)
 
     def read_files(self, filenames):
         """Extract SPE files to spe object."""
@@ -112,12 +122,12 @@ class SpeAnalyzer:
                 lambda p0,p1,p2,f=filename: self.update_frame(f)
             )
             frame_i.set(0)
-            threshold_poly = np.zeros_like(self.files[filename]['img'])
-            self.files[filename]['threshold_poly'] = threshold_poly
+            # threshold_poly = np.zeros_like(self.files[filename]['img'])
+            # self.files[filename]['threshold_poly'] = threshold_poly
             threshold.set(self.root_threshold.get())
             threshold.trace_add(
                 'write',
-                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+                lambda p0,p1,p2,f=filename: self.post_update_threshold(f)
             )
             if filename.endswith('bNIR.SPE'):
                 cmap.set(self.root_cmap_bnir.get())
@@ -186,29 +196,29 @@ class SpeAnalyzer:
             sep = ttk.Separator(self.listframe, orient=tk.HORIZONTAL)
             sep.grid(row=r+1, column=0, sticky=tk.W+tk.E)
 
-    def matplot_press(self, event, filename):
-        """Registers the selection of a polygon in Matplot"""
-        matplot = self.windows[filename]['spematplot']['matplot']
-        if event.inaxes is matplot.ax_mod:
-            cmap = event.inaxes.get_title()
-            # print('inaxes=%s' %(cmap))
-            print(vars(event))
-        # {'button': <MouseButton.LEFT: 1>, 'key': None, 'step': 0, 'dblclick': False, 'name': 'button_press_event', 'canvas': <matplotlib.backends.backend_tkagg.FigureCanvasTkAgg object at 0x000001E2AF80CA60>, 'guiEvent': <ButtonPress event num=1 x=488 y=220>, 'x': 488, 'y': 260, 'inaxes': <AxesSubplot:>, 'xdata': 101.07419354838692, 'ydata': 198.8083870967742}
+    # def matplot_press(self, event, filename):
+    #     """Registers the selection of a polygon in Matplot"""
+    #     matplot = self.windows[filename]['spematplot']['matplot']
+    #     if event.inaxes is matplot.ax_mod:
+    #         cmap = event.inaxes.get_title()
+    #         # print('inaxes=%s' %(cmap))
+    #         print(vars(event))
+    #     # {'button': <MouseButton.LEFT: 1>, 'key': None, 'step': 0, 'dblclick': False, 'name': 'button_press_event', 'canvas': <matplotlib.backends.backend_tkagg.FigureCanvasTkAgg object at 0x000001E2AF80CA60>, 'guiEvent': <ButtonPress event num=1 x=488 y=220>, 'x': 488, 'y': 260, 'inaxes': <AxesSubplot:>, 'xdata': 101.07419354838692, 'ydata': 198.8083870967742}
 
-    def matplot_motion(self, event, filename):
-        """Registers the selection of a polygon in Matplot"""
-        matplot = self.windows[filename]['spematplot']['matplot']
-        if event.inaxes is matplot.ax_mod:
-            y = int(event.ydata)
-            x = int(event.xdata)
-            self.files[filename]['threshold_poly'][y][x] = 1
-            # self.threshold_poly = np.fliplr(self.file['threshold_poly'])
-            # matplot.draw_threshold_poly()
-            print(vars(event))
-        # {'button': None, 'key': None, 'step': 0, 'dblclick': False, 'name': 'motion_notify_event', 'canvas': <matplotlib.backends.backend_tkagg.FigureCanvasTkAgg object at 0x000001E2AF80CA60>, 'guiEvent': <Motion event x=488 y=220>, 'x': 488, 'y': 260, 'inaxes': <AxesSubplot:>, 'xdata': 101.07419354838692, 'ydata': 198.8083870967742}
+    # def matplot_motion(self, event, filename):
+    #     """Registers the selection of a polygon in Matplot"""
+    #     matplot = self.windows[filename]['spematplot']['matplot']
+    #     if event.inaxes is matplot.ax_mod:
+    #         y = int(event.ydata)
+    #         x = int(event.xdata)
+    #         # self.files[filename]['threshold_poly'][y][x] = 1
+    #         # self.threshold_poly = np.fliplr(self.file['threshold_poly'])
+    #         # matplot.draw_threshold_poly()
+    #         # print(vars(event))
+    #     # {'button': None, 'key': None, 'step': 0, 'dblclick': False, 'name': 'motion_notify_event', 'canvas': <matplotlib.backends.backend_tkagg.FigureCanvasTkAgg object at 0x000001E2AF80CA60>, 'guiEvent': <Motion event x=488 y=220>, 'x': 488, 'y': 260, 'inaxes': <AxesSubplot:>, 'xdata': 101.07419354838692, 'ydata': 198.8083870967742}
 
     def update_frame_next(self, filename):
-        """Updates the frame selection for the file to the next frame."""
+        """Update the frame selection for the file to the next frame."""
         f = self.files[filename]
         frame_i = f['frame_i'].get()
         if frame_i + 1 < f['spefile'].header.NumFrames:
@@ -218,7 +228,7 @@ class SpeAnalyzer:
             print("Last frame already selected.")
 
     def update_frame_prev(self, filename):
-        """Updates the frame selection for the file to the previous frame."""
+        """Update the frame selection for the file to the previous frame."""
         f = self.files[filename]
         frame_i = f['frame_i'].get()
         if frame_i > 0:
@@ -226,6 +236,25 @@ class SpeAnalyzer:
             f['frame_i'].set(frame_i - 1)
         else:
             print("First frame already selected.")
+
+    def update_poly(self, filename, vertices):
+        f = self.files[filename]
+        matplot = self.windows[filename]['spematplot']['matplot']
+        # print(filename)
+        # print(vertices)
+        f['poly_verts'] = vertices
+        # Save polygon and remove PolygonSelector.
+        # matplot.poly.disconnect_events()
+
+    def select_poly(self, filename):
+        """Launch Poly Selector and update poly."""
+        matplot = self.windows[filename]['spematplot']['matplot']
+        matplot.poly = PolygonSelector(
+            matplot.ax_mod,
+            lambda v, f=filename: self.update_poly(f,v),
+        )
+        # Prepopulate with existing verts.
+        # matploy.poly.property = verts
 
     def update_x_i(self, val, filename):
         f = self.files[filename]
@@ -236,6 +265,11 @@ class SpeAnalyzer:
         f = self.files[filename]
         print("Updating threshold to ", val)
         f['threshold'].set(val)
+
+    def post_update_threshold(self, filename):
+        """Run post threshold update hooks."""
+        self.update_mod(filename)
+        self.draw_matplot(filename)
 
     def show_matplot(self, filename):
         """Displays matplot based on spe file."""
@@ -262,18 +296,21 @@ class SpeAnalyzer:
             matplot.b_pframe.on_clicked(
                 lambda e, f=filename: self.update_frame_prev(f)
             )
+            matplot.b_poly.on_clicked(
+                lambda e, f=filename: self.select_poly(f)
+            )
             # matplot.canvas.mpl_connect(
             #     'button_press_event', 
             #     lambda event: self.canvas._tkcanvas.focus_set()
             # )
-            matplot.canvas.mpl_connect(
-                "button_press_event",
-                lambda e, f=filename: self.matplot_press(e, f)
-            )
-            matplot.canvas.mpl_connect(
-                "motion_notify_event",
-                lambda e, f=filename: self.matplot_motion(e, f)
-            )
+            # matplot.canvas.mpl_connect(
+            #     "button_press_event",
+            #     lambda e, f=filename: self.matplot_press(e, f)
+            # )
+            # matplot.canvas.mpl_connect(
+            #     "motion_notify_event",
+            #     lambda e, f=filename: self.matplot_motion(e, f)
+            # )
             self.windows[filename]['spematplot']['matplot'] = matplot
             self.windows[filename]['spematplot']['connections'] = []
             self.connect_matplot(filename)

@@ -92,12 +92,17 @@ class spematplot():
 
     def draw_mod(self):
         """Draw the modified image, pre-blitting."""
+        mod = self.file['mod']
+        # Store location of 0 values for alpha later.
+        zeroes = (mod == 0)
         sm = cm.ScalarMappable(cmap=self.file['cmap'].get())
-        img = sm.to_rgba(self.file['mod'])
+        mod = sm.to_rgba(mod)
+        # Set alpha to 0 for excluded values.
+        mod[zeroes, 3] = 0
         if hasattr(self, 'mod'):
             self.mod.remove()
         self.mod = self.ax_mod.imshow(
-            img, 
+            mod, 
             origin = 'lower', 
             # animated = True,
         )

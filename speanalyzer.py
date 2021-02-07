@@ -390,17 +390,47 @@ class SpeAnalyzer:
         # key_press_handler(event, canvas, toolbar)
 
     def output_all_tiff(self):
-        for img in self.images:
-            filehead, filename = path.split(img.path)
-            if filename.endswith('bNIR.SPE'):
-                cmap = self.root_cmap_bnir.get()
-            else:
-                cmap = self.root_cmap_fnir.get()
-            out_path = path.splitext(img.path)[0] + '-' + cmap + '.tiff'
-            sm = cm.ScalarMappable(cmap=cmap)
-            img_cm = sm.to_rgba(img.get_frame().image_raw_mod())
-            print("Outputing ", out_path, " ...")
-            plt.imsave(out_path, img_cm, origin='lower')
+        for filename, file in self.files.items():
+            # filehead, filename = path.split(img.path)
+            # if filename.endswith('bNIR.SPE'):
+            #     cmap = self.root_cmap_bnir.get()
+            # else:
+            #     cmap = self.root_cmap_fnir.get()
+            root_path = path.splitext(filename)[0]
+            cm = self.files[filename]['cmap'].get()
+            outpath = root_path + '-' + cm
+            self.output_orig(filename, outpath)
+            self.output_mod(filename, outpath)
+            # plt.imsave(out_path, img_cm, origin='lower')
+
+    def output_mod(self, filename, outpath):
+            mod = self.files[filename]['mod']
+            # Store location of 0 values for alpha later.
+            zeroes = (mod == 0)
+            sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
+            mod = sm.to_rgba(mod)
+            # Set alpha to 0 for excluded values.
+            mod[zeroes, 3] = 0
+            dest = outpath + '-' + 'mod' + '.tiff'
+            print("Outputing ", dest, " ...")
+            plt.imsave(
+                dest,
+                mod, 
+                origin = 'lower',
+            )
+
+    def output_orig(self, filename, outpath):
+            img = self.files[filename]['img']
+            # Store location of 0 values for alpha later.
+            sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
+            img = sm.to_rgba(img)
+            dest = outpath + '-' + 'orig' + '.tiff'
+            print("Outputing ", dest, " ...")
+            plt.imsave(
+                dest,
+                img, 
+                origin = 'lower',
+            )
 
     def output_comb_tiff(self):
         return
@@ -438,9 +468,8 @@ class SpeAnalyzer:
         plt.show()
 
     def show_matplots(self):
-        # for mp in self.matplots:
-        #   mp.show()
-        t = tk.Toplevel(root)
+        for file in self.files.keys():
+            self.show_matplot(file)
 
     def __init__(self, root):
         # properties
@@ -491,16 +520,16 @@ class SpeAnalyzer:
             text="Output All tiff",
             command=self.output_all_tiff
         ).grid(row=3, column=0)
-        ttk.Button(
-            self.mainframe,
-            text="Unfinished - Plot Thresholds",
-            command=self.show_thresholds
-        ).grid(row=100, column=0)
-        ttk.Button(
-            self.mainframe,
-            text="Unfinished - Apply Threshold",
-            command=self.apply_threshold
-        ).grid(row=101, column=0)
+        # ttk.Button(
+        #     self.mainframe,
+        #     text="Unfinished - Plot Thresholds",
+        #     command=self.show_thresholds
+        # ).grid(row=100, column=0)
+        # ttk.Button(
+        #     self.mainframe,
+        #     text="Unfinished - Apply Threshold",
+        #     command=self.apply_threshold
+        # ).grid(row=101, column=0)
         ttk.Label(
             self.mainframe,
             textvariable=self.root_threshold

@@ -99,59 +99,94 @@ class SpeAnalyzer:
 
     def read_files(self, filenames):
         """Extract SPE files to spe object."""
+        files_added = []
         for filename in filenames:
-            spefile = SpeFile(filename)
-            frame_i = tk.IntVar()
-            # xgrpah = img[45]
-            # xtest = np.full((256,), 45)
-            threshold = tk.IntVar()
-            cmap = tk.StringVar()
-            x_i = tk.IntVar()
-            # Update instance dicts.
-            self.windows[filename] = {}
-            self.files[filename] = {
-                'spefile': spefile,
-                'threshold': threshold,
-                'cmap': cmap,
-                'NIR': '',
-                'frame_i': frame_i,
-                "x_i": x_i,
-            }
-            frame_i.trace_add(
-                'write',
-                lambda p0,p1,p2,f=filename: self.update_frame(f)
-            )
-            frame_i.set(0)
-            # threshold_poly = np.zeros_like(self.files[filename]['img'])
-            # self.files[filename]['threshold_poly'] = threshold_poly
-            threshold.set(self.root_threshold.get())
-            threshold.trace_add(
-                'write',
-                lambda p0,p1,p2,f=filename: self.post_update_threshold(f)
-            )
-            if filename.endswith('bNIR.SPE'):
-                cmap.set(self.root_cmap_bnir.get())
-                self.files[filename]['NIR'] = 'bright field'
-            else:
-                cmap.set(self.root_cmap_fnir.get())
-                self.files[filename]['NIR'] = 'flourescence'
-            cmap.trace_add(
-                'write',
-                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
-            )
-            x_i.set(0)
-            x_i.trace_add(
-                'write',
-                lambda p0,p1,p2,f=filename: self.draw_matplot(f)
-            )
-        self.create_listframe()
+            if filename not in self.files:
+                files_added.append(filename)
+                spefile = SpeFile(filename)
+                frame_i = tk.IntVar()
+                # xgrpah = img[45]
+                # xtest = np.full((256,), 45)
+                threshold = tk.IntVar()
+                cmap = tk.StringVar()
+                x_i = tk.IntVar()
+                order = tk.IntVar()
+                # Update instance dicts.
+                self.windows[filename] = {}
+                self.files[filename] = {
+                    'spefile': spefile,
+                    'threshold': threshold,
+                    'cmap': cmap,
+                    'NIR': '',
+                    'frame_i': frame_i,
+                    'x_i': x_i,
+                    'order': order,
+                }
+                frame_i.trace_add(
+                    'write',
+                    lambda p0,p1,p2,f=filename: self.update_frame(f)
+                )
+                frame_i.set(0)
+                # threshold_poly = np.zeros_like(self.files[filename]['img'])
+                # self.files[filename]['threshold_poly'] = threshold_poly
+                threshold.set(self.root_threshold.get())
+                threshold.trace_add(
+                    'write',
+                    lambda p0,p1,p2,f=filename: self.post_update_threshold(f)
+                )
+                if filename.endswith('bNIR.SPE'):
+                    cmap.set(self.root_cmap_bnir.get())
+                    self.files[filename]['NIR'] = 'bright field'
+                else:
+                    cmap.set(self.root_cmap_fnir.get())
+                    self.files[filename]['NIR'] = 'flourescence'
+                cmap.trace_add(
+                    'write',
+                    lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+                )
+                x_i.set(0)
+                x_i.trace_add(
+                    'write',
+                    lambda p0,p1,p2,f=filename: self.draw_matplot(f)
+                )
+                order.set(len(self.files) - 1)
+                order.trace_add(
+                    'write',
+                    lambda p0,p1,p2: self.set_grid_order()
+                )
+        if len(files_added) > 0:
+            self.create_listframe(files_added)
 
-    def create_listframe(self):
+    def change_order(self, filename, old_order, new_order):
+        self.remove_order(old_order)
+        self.insert_order(new_order)
+        self.files[filename]['order'].set(new_order)
+        
+    def insert_order(self, order):
+        for f in self.files.values():
+            if f['order'].get() >= order:
+                f['order'].set(f['order'].get() + 1)
+
+    def remove_order(self, order):
+        for f in self.files.values():
+            if f['order'].get() > order:
+                f['order'].set(f['order'].get() - 1)
+
+    def set_grid_order(self):
+        for f in self.files.values():
+            order = f['order'].get()
+            f['fileframe'].grid(row=order, column=0, sticky=tk.N+tk.W)
+
+    def create_listframe(self, files_added):
         """Creates tk Frame for currently selected SPE files."""
-        for ind, (filename, f) in enumerate(self.files.items()):
-            r = 2*ind
-            details = ttk.Frame(self.listframe)
-            details.grid(row=r, column=0)
+        for filename in files_added:
+            f = self.files[filename]
+            # Create overall frame for file.
+            fileframe = ttk.Frame(self.listframe, padding='5', relief='ridge')
+
+            # Create subframe for file details
+            details = ttk.Frame(fileframe)
+            details.grid(row=0, column=0)
             ttk.Label(details, text="File: ").grid(row=0, column=0)
             ttk.Label(details, text=filename).grid(row=0, column=1)
             ttk.Label(details, text="SPE type: ").grid(row=1, column=0)
@@ -176,25 +211,35 @@ class SpeAnalyzer:
                 text="Select from Colorplots",
                 command=lambda f=filename: self.show_colorplots(f),
             )
-            button_color.grid(row=4, column=2)
+            button_color.grid(row=5, column=1)
 
             for child in details.winfo_children():
                 child.grid_configure(padx=5, pady=5, sticky=tk.W)
-
-            buttons = ttk.Frame(self.listframe)
-            buttons.grid(row=r, column=1)
+            
+            # Create subframe for file actions.
+            buttons = ttk.Frame(fileframe)
+            buttons.grid(row=0, column=1)
+            button_discard = ttk.Button(
+                buttons,
+                text="Discard File",
+                command=lambda f=filename: self.discard_file(f),
+            )
+            button_discard.grid(row=0, column=0)
             button_matplot = ttk.Button(
                 buttons,
                 text="Show Matplot",
                 command=lambda f=filename: self.show_matplot(f),
             )
-            button_matplot.grid(row=0, column=0)
+            button_matplot.grid(row=1, column=0)
 
             for child in buttons.winfo_children():
                 child.grid_configure(padx=5, pady=5, sticky=tk.N+tk.W)
 
-            sep = ttk.Separator(self.listframe, orient=tk.HORIZONTAL)
-            sep.grid(row=r+1, column=0, sticky=tk.W+tk.E)
+            sep = ttk.Separator(fileframe, orient=tk.HORIZONTAL)
+            sep.grid(row=1, column=0, sticky=tk.W+tk.E)
+
+            self.files[filename]['fileframe'] = fileframe
+        self.set_grid_order()
 
     # def matplot_press(self, event, filename):
     #     """Registers the selection of a polygon in Matplot"""
@@ -383,6 +428,17 @@ class SpeAnalyzer:
         window['toplevel'].destroy()
         # del window['matplot']
         del self.windows[filename][windowname]
+
+    def discard_file(self, filename):
+        """Discard File from analyzer."""
+        for window in self.windows[filename].values():
+            window['toplevel'].destroy()
+        del self.windows[filename]
+        self.files[filename]['fileframe'].grid_forget()
+        self.files[filename]['fileframe'].destroy()
+        order = self.files[filename]['order'].get()
+        del self.files[filename]
+        self.remove_order(order)
 
     def on_key_press(self, event):
         if event.inaxes:

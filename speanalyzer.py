@@ -1,6 +1,7 @@
 import tkinter as tk
 from os import path
 from tkinter import IntVar, filedialog, ttk
+from math import floor
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -90,10 +91,18 @@ class SpeAnalyzer:
     def update_frame(self, filename):
         """Update frame-related components."""
         file = self.files[filename]
+        # First update the image.
         file['img'] = SpeAnalyzer.process_image(
             file['spefile'], 
             file['frame_i'].get()
         )
+        # Update image dependant stats.
+        stren = floor(np.amax(self.files[filename]['img']))
+        file['max_strength'].set(stren)
+        ind = np.argmax(file['img'])
+        x,y = np.unravel_index(ind, file['img'].shape)
+        file['max_x'].set(x)
+        # Recalculate mods and plots.
         self.update_mod(filename)
         self.draw_matplot(filename)
 
@@ -110,6 +119,8 @@ class SpeAnalyzer:
                 threshold = tk.IntVar()
                 cmap = tk.StringVar()
                 x_i = tk.IntVar()
+                max_strength = tk.IntVar()
+                max_x = tk.IntVar()
                 order = tk.IntVar()
                 # Update instance dicts.
                 self.windows[filename] = {}
@@ -121,6 +132,8 @@ class SpeAnalyzer:
                     'frame_i': frame_i,
                     'x_i': x_i,
                     'order': order,
+                    'max_strength' : max_strength,
+                    'max_x' : max_x,
                 }
                 frame_i.trace_add(
                     'write',
@@ -187,31 +200,47 @@ class SpeAnalyzer:
             # Create subframe for file details
             details = ttk.Frame(fileframe)
             details.grid(row=0, column=0)
-            ttk.Label(details, text="File: ").grid(row=0, column=0)
-            ttk.Label(details, text=filename).grid(row=0, column=1)
-            ttk.Label(details, text="SPE type: ").grid(row=1, column=0)
-            ttk.Label(details, text=f['NIR']).grid(row=1, column=1)
-            ttk.Label(details, text="Current Frame: ").grid(row=2, column=0)
-            ttk.Label(details, textvariable=f['frame_i']).grid(row=2, column=1)
-            ttk.Label(details, text="Current threshold: ").grid(
-                row=3, column=0)
-            ttk.Label(details, textvariable=f['threshold']).grid(
-                row=3, column=1)
-            ttk.Label(details, text="Current colormap: ").grid(row=4, column=0)
-            # ttk.Label(details, textvariable=f['cmap']).grid(row=3, column=1)
+            ttk.Label(details, text="File: "
+                ).grid(row=0, column=0)
+            ttk.Label(details, text=filename
+                ).grid(row=0, column=1)
+            ttk.Label(details, text="SPE type: "
+                ).grid(row=1, column=0)
+            ttk.Label(details, text=f['NIR']
+                ).grid(row=1, column=1)
+            ttk.Label(details, text="Current Frame: "
+                ).grid(row=2, column=0)
+            ttk.Label(details, textvariable=f['frame_i']
+                ).grid(row=2, column=1)
+            ttk.Label(details, text="Current threshold: "
+                ).grid(row=3, column=0)
+            ttk.Label(details, textvariable=f['threshold']
+                ).grid(row=3, column=1)
+            ttk.Label(details, text="Max Strength: "
+                ).grid(row=4, column=0)
+            ttk.Label(details, textvariable=f['max_strength']
+                ).grid(row=4, column=1)
+            ttk.Label(details, text="Max x_index: "
+                ).grid(row=5, column=0)
+            ttk.Label(details, textvariable=f['max_x']
+                ).grid(row=5, column=1)
+            ttk.Label(details, text="Current colormap: "
+                ).grid(row=6, column=0)
+            # ttk.Label(details, textvariable=f['cmap']
+            #   ).grid(row=3, column=1)
             cm = ttk.Combobox(
                 details,
                 textvariable=f['cmap'],
                 values=self.cmap_combo
             )
-            cm.grid(row=4, column=1)
+            cm.grid(row=6, column=1)
             cm.state(['readonly'])
             button_color = ttk.Button(
                 details,
                 text="Select from Colorplots",
                 command=lambda f=filename: self.show_colorplots(f),
             )
-            button_color.grid(row=5, column=1)
+            button_color.grid(row=7, column=1)
 
             for child in details.winfo_children():
                 child.grid_configure(padx=5, pady=5, sticky=tk.W)

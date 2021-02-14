@@ -13,6 +13,20 @@ from matplotlib.widgets import Slider
 from scipy import ndimage
 import time
 
+T10_PALETTE = {
+    'tab:blue', 
+    'tab:orange', 
+    'tab:green', 
+    'tab:red', 
+    'tab:purple',
+    'tab:brown', 
+    'tab:pink', 
+    'tab:gray', 
+    'tab:olive', 
+    'tab:cyan'
+}
+
+
 class spematplot():
 
     # def redraw_mod(self):
@@ -58,10 +72,24 @@ class spematplot():
         # self.bm.add_artist(self.orig_title)
         if hasattr(self, 'orig'):
             self.orig.remove()
+            self.orig_max.remove()
         self.orig = self.ax_orig.imshow(
             self.img,
-            cmap = self.file['cmap'].get(),
-            origin = 'lower',
+            cmap=self.file['cmap'].get(),
+            origin='lower',
+        )
+        max_x = self.file['max_x'].get()
+        self.orig_max = self.ax_orig.axhline(
+            y=max_x,
+            linestyle='-',
+            linewidth=2,
+            color='tab:blue',
+            label = "Max Strength (x = " + str(max_x) + ")",
+            # animated = True,
+        )
+        self.orig_legend = self.ax_orig.legend(
+            loc='upper center', 
+            bbox_to_anchor=(0.5,-0.1),
         )
 
     def draw_threshold(self):
@@ -73,19 +101,35 @@ class spematplot():
         # self.threshold.poly.draw(self.canvas.get_renderer())
         # self.bm.add_artist(self.xgraph_title)
         self.ax_xgraph.set_ylim([np.amin(self.img), np.amax(self.img)])
+        max_x = self.file['max_x'].get()
+        x_i = self.file['x_i'].get()
         if hasattr(self, 'xgraph_plot'):
-            self.xgraph_plot.set_ydata(self.img[self.file['x_i'].get()])
+            self.xgraph_plot.set_ydata(self.img[x_i])
+            self.xgraph_plot.set_label("Strength at x = " + str(x_i))
+            self.xgraph_max.set_ydata(self.img[max_x])
         else:
             (self.xgraph_plot,) = self.ax_xgraph.plot(
-                self.img[self.file['x_i'].get()],
+                self.img[x_i],
+                color = 'tab:red',
+                label = "Strength at x = " + str(x_i),
                 # animated = True,
             )
+            (self.xgraph_max,) = self.ax_xgraph.plot(
+                self.img[max_x],
+                color = 'tab:blue',
+                label = "Max Strength",
+                # animated = True,
+            )
+        self.orig_legend = self.ax_xgraph.legend(
+            loc='upper center', 
+            bbox_to_anchor=(0.5,-0.05),
+        )
         # self.bm.add_artist(self.xgraph_plot)
         # self.xgraph_line = self.ax_xgraph.axhline(
-        #     y = self.file['threshold'].get(), 
-        #     linestyle = '-', 
-        #     linewidth = 2, 
-        #     color = 'firebrick',
+        #     y = self.file['threshold'].get(),
+        #     linestyle = '-',
+        #     linewidth = 2,
+        #     color = 'tab:red',
         #     animated = True,
         # )
         # self.bm.add_artist(self.xgraph_line)
@@ -102,8 +146,8 @@ class spematplot():
         if hasattr(self, 'mod'):
             self.mod.remove()
         self.mod = self.ax_mod.imshow(
-            mod, 
-            origin = 'lower', 
+            mod,
+            origin='lower',
             # animated = True,
         )
         # self.bm.add_artist(self.mod)
@@ -114,7 +158,8 @@ class spematplot():
         self.orig_title.set_text("Frame #" + str(self.file['frame_i'].get()))
         self.xgraph_plot.set_ydata(self.img[self.file['x_i'].get()])
         # self.xgraph_line.set_ydata(self.file['threshold'].get())
-        self.xgraph_title.set_text("Strength at x=" + str(self.file['x_i'].get()))
+        self.xgraph_title.set_text(
+            "Strength at x=" + str(self.file['x_i'].get()))
         # self.redraw_mod()
         # self.bm.update()
 
@@ -172,27 +217,27 @@ class spematplot():
             "",
             0,
             self.iwidth - 1,
-            valinit = self.file['x_i'].get(),
-            valstep = 1,
-            orientation = 'vertical',
-            fill = False,
-            linestyle = '-',
-            linewidth = 2,
-            color = 'firebrick',
+            valinit=self.file['x_i'].get(),
+            valstep=1,
+            orientation='vertical',
+            fill=False,
+            linestyle='-',
+            linewidth=2,
+            color='tab:red',
         )
         self.threshold = Slider(
             self.ax_xgraph,
-            "", 
+            "",
             # these need to be changed based on Frame?
             0,
             floor(np.amax(file['img'])),
-            valinit = self.file['threshold'].get(),
-            valstep = 1,
-            orientation = 'vertical',
-            fill = False,
-            linestyle = '-', 
-            linewidth = 2, 
-            color = 'firebrick',    
+            valinit=self.file['threshold'].get(),
+            valstep=1,
+            orientation='vertical',
+            fill=False,
+            linestyle='-',
+            linewidth=2,
+            color='tab:red',
         )
         self.b_nframe = mpButton(self.ax_nframe, 'Next Frame')
         self.b_pframe = mpButton(self.ax_pframe, 'Prev Frame')

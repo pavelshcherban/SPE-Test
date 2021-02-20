@@ -1,7 +1,8 @@
 import tkinter as tk
+from math import floor
 from os import path
 from tkinter import IntVar, filedialog, ttk
-from math import floor
+from tkinter.constants import ANCHOR
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button as mpButton
-from matplotlib.widgets import Slider, PolygonSelector
+from matplotlib.widgets import PolygonSelector, Slider
 from mpl_toolkits.axes_grid1 import ImageGrid
 from scipy import ndimage
 from skimage import color, filters, util
@@ -243,7 +244,7 @@ class SpeAnalyzer:
             button_color.grid(row=7, column=1)
 
             for child in details.winfo_children():
-                child.grid_configure(padx=5, pady=5, sticky=tk.W)
+                child.grid_configure(padx=5, pady=1, sticky=tk.W)
             
             # Create subframe for file actions.
             buttons = ttk.Frame(fileframe)
@@ -269,6 +270,11 @@ class SpeAnalyzer:
 
             self.files[filename]['fileframe'] = fileframe
         self.set_grid_order()
+        # Update scrollable regaion with new canvas size.
+        self.listcanvas.configure(
+            scrollregion = self.listcanvas.bbox("all"),
+            yscrollcommand = self.listvscroll.set,
+        )
 
     # def matplot_press(self, event, filename):
     #     """Registers the selection of a polygon in Matplot"""
@@ -556,6 +562,14 @@ class SpeAnalyzer:
         for file in self.files.keys():
             self.show_matplot(file)
 
+    def resize_listframe(self, e):
+        self.listcanvas.configure(
+                scrollregion = self.listcanvas.bbox("all")
+            )
+
+    def on_mousewheel(self, event):
+        self.listcanvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
     def __init__(self, root):
         # properties
         self.files = {}
@@ -573,12 +587,12 @@ class SpeAnalyzer:
 
         # Root Window Setup
         root.title("SPE File Analyzer")
-        root.columnconfigure(0, weight=1)
+        root.columnconfigure(0, weight=0)
         root.rowconfigure(0, weight=1)
 
         # Main function frame
         self.mainframe = ttk.Frame(root, padding='5', relief='ridge')
-        self.mainframe.grid(row=0, column=0, sticky=tk.N+tk.W)
+        self.mainframe.grid(row=0, column=0, sticky=tk.N+tk.W+tk.S+tk.E)
         # ttk.Separator(self.mainframe, orient=VERTICAL)
 
         ttk.Button(
@@ -623,9 +637,29 @@ class SpeAnalyzer:
         for child in self.mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5, sticky=tk.W)
 
-        # File listing frame
-        self.listframe = ttk.Frame(root, padding='5', relief='ridge')
+        # Scrollable File listing 
+        # Make this a canvas to support scrollability for many files.
+        self.listcanvas = tk.Canvas(root, background='blue')
+        self.listcanvas.grid(row=0, column=1, sticky=tk.N+tk.W+tk.S+tk.E)
+        root.columnconfigure(1, weight=1)
+        self.listvscroll = ttk.Scrollbar(
+            root, 
+            orient = tk.VERTICAL,
+            command = self.listcanvas.yview,
+        )
+        self.listvscroll.grid(row=0, column=2, sticky=(tk.N+tk.S))
+        self.listframe = ttk.Frame(self.listcanvas, relief = 'ridge')
         self.listframe.grid(row=0, column=1, sticky=tk.N+tk.W)
+
+        # Change scrollable region whenever canvas content changes.
+        self.listframe.bind('<Configure>',self.resize_listframe)
+        self.listcanvas.create_window(
+            (0,0),
+            window = self.listframe,
+            anchor = "nw",
+        )
+        self.listcanvas.configure(yscrollcommand=self.listvscroll.set)
+        root.bind_all('<MouseWheel>', self.on_mousewheel)
 
         # self.create_cmap_combo()
         self.cmap_combo = [cm for group, cms in CMAPS for cm in cms]

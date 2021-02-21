@@ -75,8 +75,8 @@ class spematplot():
             self.orig_max.remove()
         self.orig = self.ax_orig.imshow(
             self.img,
-            cmap=self.file['cmap'].get(),
-            origin='lower',
+            cmap = self.file['cmap'].get(),
+            origin = 'lower',
         )
         max_x = self.file['max_x'].get()
         self.orig_max = self.ax_orig.axhline(
@@ -120,6 +120,7 @@ class spematplot():
                 label = "Max Strength",
                 # animated = True,
             )
+            self.ax_xgraph.set_box_aspect(self.iwidth/self.iheight)
         self.orig_legend = self.ax_xgraph.legend(
             loc='upper center', 
             bbox_to_anchor=(0.5,-0.05),
@@ -159,7 +160,7 @@ class spematplot():
         self.xgraph_plot.set_ydata(self.img[self.file['x_i'].get()])
         # self.xgraph_line.set_ydata(self.file['threshold'].get())
         self.xgraph_title.set_text(
-            "Strength at x=" + str(self.file['x_i'].get()))
+            "Sig Str across x")
         # self.redraw_mod()
         # self.bm.update()
 

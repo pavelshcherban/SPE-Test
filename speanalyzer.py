@@ -377,6 +377,7 @@ class SpeAnalyzer:
                 self.files[filename],
                 self.windows[filename]['spematplot']
             )
+            # Bind in this class to access other frames of img data.
             matplot.b_nframe.on_clicked(
                 lambda e, f=filename: self.update_frame_next(f)
             )
@@ -386,18 +387,6 @@ class SpeAnalyzer:
             matplot.b_poly.on_clicked(
                 lambda e, f=filename: self.select_poly(f)
             )
-            # matplot.canvas.mpl_connect(
-            #     'button_press_event', 
-            #     lambda event: self.canvas._tkcanvas.focus_set()
-            # )
-            # matplot.canvas.mpl_connect(
-            #     "button_press_event",
-            #     lambda e, f=filename: self.matplot_press(e, f)
-            # )
-            # matplot.canvas.mpl_connect(
-            #     "motion_notify_event",
-            #     lambda e, f=filename: self.matplot_motion(e, f)
-            # )
             self.windows[filename]['spematplot']['matplot'] = matplot
             self.windows[filename]['spematplot']['connections'] = []
             self.connect_matplot(filename)

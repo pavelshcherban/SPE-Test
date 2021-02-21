@@ -91,6 +91,11 @@ class spematplot():
             loc='upper center', 
             bbox_to_anchor=(0.5,-0.1),
         )
+        # self.ax_orig.set_axis_on()
+        # self.ax_orig.set_yticks(np.arange(0,self.iwidth,100))
+        # self.ax_orig.set_xticks(np.arange(0,self.iheight,100))
+        # self.ax_orig.minorticks_on()
+
 
     def draw_threshold(self):
         """Draw the threshold graph axis, pre-blitting."""
@@ -120,8 +125,13 @@ class spematplot():
                 label = "Max Strength",
                 # animated = True,
             )
+            # self.ax_xgraph.set_box_aspect(self.iwidth/self.iheight)
+            # self.ax_xgraph.set_axis_on()
+            # self.ax_xgraph.set_yticks(np.arange(0,self.iwidth,100))
+            # self.ax_xgraph.set_xticks(np.arange(0,self.iheight,100))
+            # self.ax_xgraph.minorticks_on()
             self.ax_xgraph.set_box_aspect(self.iwidth/self.iheight)
-        self.orig_legend = self.ax_xgraph.legend(
+        self.xgraph_legend = self.ax_xgraph.legend(
             loc='upper center', 
             bbox_to_anchor=(0.5,-0.05),
         )
@@ -203,7 +213,12 @@ class spematplot():
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         # create initial plot
-        self.axes = self.fig.subplots(1, 3)
+        self.axes = self.fig.subplots(
+            1, 
+            3,
+            gridspec_kw = {
+                'wspace': 0.5,
+            })
         (self.ax_orig, self.ax_xgraph, self.ax_mod) = self.axes
         self.ax_mod.set_title("Modified Image")
         self.ax_pframe = self.fig.add_axes([0.12, 0.05, 0.1, 0.05])
@@ -226,12 +241,13 @@ class spematplot():
             linewidth=2,
             color='tab:red',
         )
+        str_max = floor(np.amax(file['img']))
         self.threshold = Slider(
             self.ax_xgraph,
             "",
             # these need to be changed based on Frame?
             0,
-            floor(np.amax(file['img'])),
+            str_max,
             valinit=self.file['threshold'].get(),
             valstep=1,
             orientation='vertical',
@@ -243,5 +259,21 @@ class spematplot():
         self.b_nframe = mpButton(self.ax_nframe, 'Next Frame')
         self.b_pframe = mpButton(self.ax_pframe, 'Prev Frame')
         self.b_poly = mpButton(self.ax_poly, 'Select Region')
+        
+        # Slider removes Axis ticks, so need to recreate.
+        self.ax_orig.set_yticks(np.arange(0,self.iwidth,100))
+        self.ax_orig.set_xticks(np.arange(0,self.iheight,100))
+        self.ax_orig.minorticks_on()
+        self.x_i.valtext.set_visible(False)
+
+        str_interval = str_max/3
+        self.ax_xgraph.set_yticks(np.arange(0,str_max,str_interval))
+        self.ax_xgraph.set_xticks(np.arange(0,self.iheight,100))
+        self.ax_xgraph.minorticks_on()
+        self.threshold.valtext.set_visible(False)
+        
+        self.ax_mod.set_yticks(np.arange(0,self.iwidth,100))
+        self.ax_mod.set_xticks(np.arange(0,self.iheight,100))
+        self.ax_mod.minorticks_on()
 
         self.draw_figure()

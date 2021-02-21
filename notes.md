@@ -9,9 +9,12 @@
 - Mousewheel scrolling may only work on Windows: https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
 
 ## Features
-- regional intensities by manual selection
-- combining images
-- region calculation from intensities
+- save output files to specific folder
+- select arbitrary pixel, that may not be absolute maximum
 - max point decay over time
-- axes values
+- save chosen datapoints
+
+- regional intensities by manual selection
+- region calculation from intensities
 - statistical significance (p-value)
+- combining images

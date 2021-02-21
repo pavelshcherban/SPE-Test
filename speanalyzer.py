@@ -107,6 +107,19 @@ class SpeAnalyzer:
         self.update_mod(filename)
         self.draw_matplot(filename)
 
+    def apply_default_cmap(self, filename):
+        """Sets colormap for one loaded file based on default."""
+        f = self.files[filename]
+        if filename.endswith('bNIR.SPE'):
+            f['cmap'].set(self.root_cmap_bnir.get())
+        else:
+            f['cmap'].set(self.root_cmap_fnir.get())
+
+    def apply_default_cmaps(self):
+        """Sets colormaps for all loaded files based on defaults."""
+        for f in self.files:
+            self.apply_default_cmap(f)
+
     def read_files(self, filenames):
         """Extract SPE files to spe object."""
         files_added = []
@@ -149,11 +162,10 @@ class SpeAnalyzer:
                     lambda p0,p1,p2,f=filename: self.post_update_threshold(f)
                 )
                 if filename.endswith('bNIR.SPE'):
-                    cmap.set(self.root_cmap_bnir.get())
                     self.files[filename]['NIR'] = 'bright field'
                 else:
-                    cmap.set(self.root_cmap_fnir.get())
                     self.files[filename]['NIR'] = 'flourescence'
+                self.apply_default_cmap(filename)
                 cmap.trace_add(
                     'write',
                     lambda p0,p1,p2,f=filename: self.draw_matplot(f)
@@ -270,11 +282,6 @@ class SpeAnalyzer:
 
             self.files[filename]['fileframe'] = fileframe
         self.set_grid_order()
-        # Update scrollable regaion with new canvas size.
-        self.listcanvas.configure(
-            scrollregion = self.listcanvas.bbox("all"),
-            yscrollcommand = self.listvscroll.set,
-        )
 
     # def matplot_press(self, event, filename):
     #     """Registers the selection of a polygon in Matplot"""
@@ -563,8 +570,10 @@ class SpeAnalyzer:
             self.show_matplot(file)
 
     def resize_listframe(self, e):
+        bb = self.listcanvas.bbox("all")
         self.listcanvas.configure(
-                scrollregion = self.listcanvas.bbox("all")
+                scrollregion = bb,
+                width = bb[2]-bb[0],
             )
 
     def on_mousewheel(self, event):
@@ -574,6 +583,8 @@ class SpeAnalyzer:
         # properties
         self.files = {}
         self.windows = {}
+        self.cmap_combo = [cm for group, cms in CMAPS for cm in cms]
+        self.cmap_combo.sort()
 
         # Root Window label variables
         self.label_filenames = tk.StringVar()
@@ -599,26 +610,18 @@ class SpeAnalyzer:
             self.mainframe,
             text="Select Files",
             command=self.select_files
-        ).grid(row=0, column=0)
+        ).grid(row=0, column=0, columnspan=2)
         # ttk.Button(self.mainframe, text="Select Fluorescent Colormap",command=self.show_colormaps).grid(row=1, column=0)
-        ttk.Label(
-            self.mainframe,
-            textvariable=self.root_cmap_bnir
-        ).grid(row=1, column=1)
-        ttk.Label(
-            self.mainframe,
-            textvariable=self.root_cmap_fnir
-        ).grid(row=1, column=2)
         ttk.Button(
             self.mainframe,
             text="Show MatPlots",
             command=self.show_matplots
-        ).grid(row=2, column=0)
+        ).grid(row=1, column=0, columnspan=2)
         ttk.Button(
             self.mainframe,
             text="Output All tiff",
             command=self.output_all_tiff
-        ).grid(row=3, column=0)
+        ).grid(row=2, column=0, columnspan=2)
         # ttk.Button(
         #     self.mainframe,
         #     text="Unfinished - Plot Thresholds",
@@ -631,8 +634,39 @@ class SpeAnalyzer:
         # ).grid(row=101, column=0)
         ttk.Label(
             self.mainframe,
+            text = "Default min strength threshold"
+        ).grid(row=101, column=0)
+        ttk.Label(
+            self.mainframe,
             textvariable=self.root_threshold
         ).grid(row=101, column=1)
+        ttk.Label(
+            self.mainframe,
+            text = "Default bright field colormap:"
+        ).grid(row=102, column=0)
+        cm_bnir = ttk.Combobox(
+            self.mainframe,
+            textvariable=self.root_cmap_bnir,
+            values=self.cmap_combo
+        )
+        cm_bnir.grid(row=102, column=1)
+        cm_bnir.state(['readonly'])
+        ttk.Label(
+            self.mainframe,
+            text = "Default flourescence colormap:"
+        ).grid(row=103, column=0)
+        cm_fnir = ttk.Combobox(
+            self.mainframe,
+            textvariable=self.root_cmap_fnir,
+            values=self.cmap_combo
+        )
+        cm_fnir.grid(row=103, column=1)
+        cm_fnir.state(['readonly'])
+        ttk.Button(
+            self.mainframe,
+            text = "Apply to loaded files",
+            command = self.apply_default_cmaps
+        ).grid(row=102, column=2, rowspan=2)
 
         for child in self.mainframe.winfo_children():
             child.grid_configure(padx=5, pady=5, sticky=tk.W)
@@ -661,9 +695,6 @@ class SpeAnalyzer:
         self.listcanvas.configure(yscrollcommand=self.listvscroll.set)
         root.bind_all('<MouseWheel>', self.on_mousewheel)
 
-        # self.create_cmap_combo()
-        self.cmap_combo = [cm for group, cms in CMAPS for cm in cms]
-        self.cmap_combo.sort()
 
 
 root = tk.Tk()

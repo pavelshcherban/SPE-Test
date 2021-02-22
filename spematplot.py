@@ -126,14 +126,6 @@ class spematplot():
                 verticalalignment = 'center',
                 transform = self.ax_orig.transAxes,
                 bbox = dict(facecolor='tab:red', alpha=0.1),
-                # xytext=(0.9, 1.1), 
-                # str(sel_str),
-                # xy = (y_i,x_i),
-                # xycoords = 'data',
-                # textcoords='axes fraction',
-                # arrowprops = dict(facecolor='black', shrink=0.05),
-                # horizontalalignment = 'right', 
-                # verticalalignment = 'top',
             )
         # Needs to be redrawn every time to update.
         self.orig_legend = self.ax_orig.legend(
@@ -157,10 +149,16 @@ class spematplot():
         self.ax_xgraph.set_ylim([np.amin(self.img), np.amax(self.img)])
         max_x = self.file['max_x'].get()
         x_i = self.file['x_i'].get()
+        y_i = self.file['y_i'].get()
+        sel_str = self.file['sel_strength'].get()
+        # str_x = float(x_i)/self.iwidth
         if hasattr(self, 'xgraph_plot'):
             self.xgraph_plot.set_ydata(self.img[x_i])
             self.xgraph_plot.set_label("Strength at x = " + str(x_i))
             self.xgraph_max.set_ydata(self.img[max_x])
+            self.ax_x.set_data(y_i,sel_str)
+            # self.ax_x.set_ydata(sel_str)
+            # self.ax_x.set_label("Strength at " + str((x_i,y_i)))
         else:
             (self.xgraph_plot,) = self.ax_xgraph.plot(
                 self.img[x_i],
@@ -174,12 +172,33 @@ class spematplot():
                 label = "Max Strength",
                 # animated = True,
             )
-            # self.ax_xgraph.set_box_aspect(self.iwidth/self.iheight)
-            # self.ax_xgraph.set_axis_on()
-            # self.ax_xgraph.set_yticks(np.arange(0,self.iwidth,100))
-            # self.ax_xgraph.set_xticks(np.arange(0,self.iheight,100))
-            # self.ax_xgraph.minorticks_on()
             self.ax_xgraph.set_box_aspect(self.iwidth/self.iheight)
+            x = self.ax_xgraph.plot(
+                y_i,
+                sel_str,
+                'x',
+                color = 'tab:pink',
+                label = "Selected Point",
+                markersize = 10,
+            )
+            self.ax_x = x[0]
+            # self.ax_x = self.ax_xgraph.axhline(
+            #     y = sel_str,
+            #     linestyle='-',
+            #     linewidth=1,
+            #     color='tab:red',
+            #     label = "Strength at " + str((x_i,y_i)),
+            #     # animated = True,
+            # )
+            # self.ax_str = self.ax_xgraph.text(
+            #     1.1,
+            #     str_x,
+            #     sel_str, 
+            #     horizontalalignment = 'center',
+            #     verticalalignment = 'center',
+            #     transform = self.ax_orig.transAxes,
+            #     bbox = dict(facecolor='tab:red', alpha=0.1),
+            # )
         self.xgraph_legend = self.ax_xgraph.legend(
             loc='upper center', 
             bbox_to_anchor=(0.5,-0.05),

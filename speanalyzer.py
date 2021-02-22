@@ -17,7 +17,9 @@ from matplotlib.widgets import PolygonSelector, Slider
 from mpl_toolkits.axes_grid1 import ImageGrid
 from scipy import ndimage
 from skimage import color, filters, util
+from skimage.feature import peak_local_max
 from skimage.draw import polygon, polygon2mask
+from scipy.signal import argrelmax
 
 from colorplot import colorplot
 from pyWinSpec.winspec import SpeFile
@@ -99,7 +101,18 @@ class SpeAnalyzer:
             file['frame_i'].get()
         )
         # Update image dependant stats.
-        stren = floor(np.amax(self.files[filename]['img']))
+        # image_max = ndimage.maximum_filter(file['img'], size=50, mode='constant')
+        file['relmax'] = peak_local_max(
+            file['img'], 
+            min_distance = 5,
+            threshold_rel = 0.2,
+            num_peaks = 10,
+        )
+        # file['relmax'] = argrelmax(file['img'], order=100)
+        # print(file['relmax'][0].shape)
+        # print(file['relmax'][1].shape)
+        # print(file['img'][file['relmax'][0]][file['relmax'][1]])
+        stren = floor(np.amax(file['img']))
         file['max_strength'].set(stren)
         ind = np.argmax(file['img'])
         x,y = np.unravel_index(ind, file['img'].shape)

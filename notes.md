@@ -14,6 +14,7 @@
 - max point decay over time
 - save chosen datapoints to csv
 - save header export information
+- change median filtering with toggle to reduce noise in 'virdis' colormap.
 
 - regional intensities by manual selection
 - region calculation from intensities

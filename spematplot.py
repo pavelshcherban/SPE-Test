@@ -70,23 +70,36 @@ class spematplot():
             # animated = True,
         )
         # self.bm.add_artist(self.orig_title)
+        # Needs to be redrawn since there is no set_data method.
         if hasattr(self, 'orig'):
             self.orig.remove()
-            self.orig_max.remove()
         self.orig = self.ax_orig.imshow(
             self.img,
             cmap = self.file['cmap'].get(),
             origin = 'lower',
         )
-        max_x = self.file['max_x'].get()
-        self.orig_max = self.ax_orig.axhline(
-            y=max_x,
-            linestyle='-',
-            linewidth=2,
-            color='tab:blue',
-            label = "Max Strength (x = " + str(max_x) + ")",
-            # animated = True,
-        )
+        max_coor = self.file['relmax']
+        if hasattr(self, 'orig_relmax'):
+            self.orig_relmax.set_data(max_coor[:, 1],max_coor[:, 0])
+        else:
+            # max_x = self.file['max_x'].get()
+            # self.orig_max = self.ax_orig.axhline(
+            #     y=max_x,
+            #     linestyle='-',
+            #     linewidth=2,
+            #     color='tab:blue',
+            #     label = "Max Strength (x = " + str(max_x) + ")",
+            #     # animated = True,
+            # )
+            relmax = self.ax_orig.plot(
+                max_coor[:, 1],
+                max_coor[:, 0],
+                'o',
+                color = 'tab:pink',
+                label = "Regional Maxima",
+            )
+            self.orig_relmax = relmax[0]
+        # Needs to be redrawn every time to update.
         self.orig_legend = self.ax_orig.legend(
             loc='upper center', 
             bbox_to_anchor=(0.5,-0.1),

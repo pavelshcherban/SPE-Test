@@ -78,27 +78,63 @@ class spematplot():
             cmap = self.file['cmap'].get(),
             origin = 'lower',
         )
+
         max_coor = self.file['relmax']
+        x_i = self.file['x_i'].get()
+        y_i = self.file['y_i'].get()
+        sel_str = "Strength\n" + str(self.file['sel_strength'].get())
+        str_x = float(x_i)/self.iwidth
         if hasattr(self, 'orig_relmax'):
             self.orig_relmax.set_data(max_coor[:, 1],max_coor[:, 0])
+            self.orig_x.set_ydata(x_i)
+            self.orig_x.set_label("Selected x=" + str(x_i))
+            self.orig_y.set_xdata(y_i)
+            self.orig_y.set_label("Selected y=" + str(y_i))
+            self.orig_str.set_position((1.1,str_x))
+            self.orig_str.set_text(sel_str)
         else:
             # max_x = self.file['max_x'].get()
-            # self.orig_max = self.ax_orig.axhline(
-            #     y=max_x,
-            #     linestyle='-',
-            #     linewidth=2,
-            #     color='tab:blue',
-            #     label = "Max Strength (x = " + str(max_x) + ")",
-            #     # animated = True,
-            # )
+            self.orig_x = self.ax_orig.axhline(
+                y = x_i,
+                linestyle='-',
+                linewidth=1,
+                color='tab:red',
+                label = "Selected x=" + str(x_i),
+                # animated = True,
+            )
+            self.orig_y = self.ax_orig.axvline(
+                x = y_i,
+                linestyle='-',
+                linewidth=1,
+                color='tab:red',
+                label = "Selected y=" + str(y_i),
+                # animated = True,
+            )
             relmax = self.ax_orig.plot(
                 max_coor[:, 1],
                 max_coor[:, 0],
-                'o',
+                'x',
                 color = 'tab:pink',
                 label = "Regional Maxima",
             )
             self.orig_relmax = relmax[0]
+            self.orig_str = self.ax_orig.text(
+                1.1,
+                str_x,
+                sel_str, 
+                horizontalalignment = 'center',
+                verticalalignment = 'center',
+                transform = self.ax_orig.transAxes,
+                bbox = dict(facecolor='tab:red', alpha=0.1),
+                # xytext=(0.9, 1.1), 
+                # str(sel_str),
+                # xy = (y_i,x_i),
+                # xycoords = 'data',
+                # textcoords='axes fraction',
+                # arrowprops = dict(facecolor='black', shrink=0.05),
+                # horizontalalignment = 'right', 
+                # verticalalignment = 'top',
+            )
         # Needs to be redrawn every time to update.
         self.orig_legend = self.ax_orig.legend(
             loc='upper center', 
@@ -241,19 +277,19 @@ class spematplot():
         # self.fig.tight_layout(h_pad=2)
 
         # plot slider
-        self.x_i = Slider(
-            self.ax_orig,
-            "",
-            0,
-            self.iwidth - 1,
-            valinit=self.file['x_i'].get(),
-            valstep=1,
-            orientation='vertical',
-            fill=False,
-            linestyle='-',
-            linewidth=2,
-            color='tab:red',
-        )
+        # self.x_i = Slider(
+        #     self.ax_orig,
+        #     "",
+        #     0,
+        #     self.iwidth - 1,
+        #     valinit=self.file['x_i'].get(),
+        #     valstep=1,
+        #     orientation='vertical',
+        #     fill=False,
+        #     linestyle='-',
+        #     linewidth=2,
+        #     color='tab:red',
+        # )
         str_max = floor(np.amax(file['img']))
         self.threshold = Slider(
             self.ax_xgraph,
@@ -277,7 +313,7 @@ class spematplot():
         self.ax_orig.set_yticks(np.arange(0,self.iwidth,100))
         self.ax_orig.set_xticks(np.arange(0,self.iheight,100))
         self.ax_orig.minorticks_on()
-        self.x_i.valtext.set_visible(False)
+        # self.x_i.valtext.set_visible(False)
 
         str_interval = str_max/3
         self.ax_xgraph.set_yticks(np.arange(0,str_max,str_interval))

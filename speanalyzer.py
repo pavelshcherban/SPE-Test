@@ -117,6 +117,9 @@ class SpeAnalyzer:
         ind = np.argmax(file['img'])
         x,y = np.unravel_index(ind, file['img'].shape)
         file['max_x'].set(x)
+        file['max_y'].set(y)
+        file['y_i'].set(y)
+        file['x_i'].set(x)
         # Recalculate mods and plots.
         self.update_mod(filename)
         self.draw_matplot(filename)
@@ -146,9 +149,12 @@ class SpeAnalyzer:
                 # xtest = np.full((256,), 45)
                 threshold = tk.IntVar()
                 cmap = tk.StringVar()
+                sel_strength = tk.IntVar()
                 x_i = tk.IntVar()
+                y_i = tk.IntVar()
                 max_strength = tk.IntVar()
                 max_x = tk.IntVar()
+                max_y = tk.IntVar()
                 order = tk.IntVar()
                 # Update instance dicts.
                 self.windows[filename] = {}
@@ -158,11 +164,18 @@ class SpeAnalyzer:
                     'cmap': cmap,
                     'NIR': '',
                     'frame_i': frame_i,
+                    'sel_strength' : sel_strength,
                     'x_i': x_i,
+                    'y_i': y_i,
                     'order': order,
                     'max_strength' : max_strength,
                     'max_x' : max_x,
+                    'max_y' : max_y,
                 }
+                x_i.trace_add(
+                    'write',
+                    lambda p0,p1,p2,f=filename: self.update_x_i(f)
+                )
                 frame_i.trace_add(
                     'write',
                     lambda p0,p1,p2,f=filename: self.update_frame(f)
@@ -181,11 +194,6 @@ class SpeAnalyzer:
                     self.files[filename]['NIR'] = 'flourescence'
                 self.apply_default_cmap(filename)
                 cmap.trace_add(
-                    'write',
-                    lambda p0,p1,p2,f=filename: self.draw_matplot(f)
-                )
-                x_i.set(0)
-                x_i.trace_add(
                     'write',
                     lambda p0,p1,p2,f=filename: self.draw_matplot(f)
                 )
@@ -230,7 +238,7 @@ class SpeAnalyzer:
             ttk.Label(details, text="File: "
                 ).grid(row=0, column=0)
             ttk.Label(details, text=filename
-                ).grid(row=0, column=1)
+                ).grid(row=0, column=1, columnspan=5)
             ttk.Label(details, text="SPE type: "
                 ).grid(row=1, column=0)
             ttk.Label(details, text=f['NIR']
@@ -248,11 +256,27 @@ class SpeAnalyzer:
             ttk.Label(details, textvariable=f['max_strength']
                 ).grid(row=4, column=1)
             ttk.Label(details, text="Max x_index: "
-                ).grid(row=5, column=0)
+                ).grid(row=4, column=2)
             ttk.Label(details, textvariable=f['max_x']
+                ).grid(row=4, column=3)
+            ttk.Label(details, text="Max y_index: "
+                ).grid(row=4, column=4)
+            ttk.Label(details, textvariable=f['max_y']
+                ).grid(row=4, column=5)
+            ttk.Label(details, text="Selected Strength: "
+                ).grid(row=5, column=0)
+            ttk.Label(details, textvariable=f['sel_strength']
                 ).grid(row=5, column=1)
+            ttk.Label(details, text="Selected x_index: "
+                ).grid(row=5, column=2)
+            ttk.Label(details, textvariable=f['x_i']
+                ).grid(row=5, column=3)
+            ttk.Label(details, text="Selected y_index: "
+                ).grid(row=5, column=4)
+            ttk.Label(details, textvariable=f['y_i']
+                ).grid(row=5, column=5)
             ttk.Label(details, text="Current colormap: "
-                ).grid(row=6, column=0)
+                ).grid(row=7, column=0)
             # ttk.Label(details, textvariable=f['cmap']
             #   ).grid(row=3, column=1)
             cm = ttk.Combobox(
@@ -260,14 +284,14 @@ class SpeAnalyzer:
                 textvariable=f['cmap'],
                 values=self.cmap_combo
             )
-            cm.grid(row=6, column=1)
+            cm.grid(row=7, column=1)
             cm.state(['readonly'])
             button_color = ttk.Button(
                 details,
                 text="Select from Colorplots",
                 command=lambda f=filename: self.show_colorplots(f),
             )
-            button_color.grid(row=7, column=1)
+            button_color.grid(row=7, column=2)
 
             for child in details.winfo_children():
                 child.grid_configure(padx=5, pady=1, sticky=tk.W)
@@ -357,10 +381,12 @@ class SpeAnalyzer:
         # Prepopulate with existing verts.
         # matploy.poly.property = verts
 
-    def update_x_i(self, val, filename):
+    def update_x_i(self, filename):
         f = self.files[filename]
-        print("Updating x_i to ", val)
-        f['x_i'].set(val)
+        x = f['x_i'].get()
+        y = f['y_i'].get()
+        f['sel_strength'].set(floor(f['img'][x][y]))
+        self.draw_matplot(filename)
 
     def update_threshold(self, val, filename):
         f = self.files[filename]
@@ -371,6 +397,17 @@ class SpeAnalyzer:
         """Run post threshold update hooks."""
         self.update_mod(filename)
         self.draw_matplot(filename)
+
+    def matplot_press(self, event, filename):
+        """Register a mouse click on a matplot plot"""
+        if event.inaxes:
+            file = self.files[filename]
+            matplot = self.windows[filename]['spematplot']['matplot']
+            ax_orig, ax_xgraph, ax_mod =  matplot.axes
+            ax_click = event.inaxes
+            if ax_click == ax_orig:
+                file['y_i'].set(floor(event.xdata))
+                file['x_i'].set(floor(event.ydata))
 
     def show_matplot(self, filename):
         """Displays matplot based on spe file."""
@@ -401,6 +438,10 @@ class SpeAnalyzer:
             matplot.b_poly.on_clicked(
                 lambda e, f=filename: self.select_poly(f)
             )
+            matplot.canvas.mpl_connect(
+                "button_press_event",
+                lambda e, f=filename: self.matplot_press(e, f)
+            )
             self.windows[filename]['spematplot']['matplot'] = matplot
             self.windows[filename]['spematplot']['connections'] = []
             self.connect_matplot(filename)
@@ -417,9 +458,9 @@ class SpeAnalyzer:
         """Connect the animated components of the matplot to the backend."""
         matplot = self.windows[filename]['spematplot']['matplot']
         connections = self.windows[filename]['spematplot']['connections']
-        connections.append(matplot.x_i.on_changed(
-            lambda v, f=filename: self.update_x_i(v, f)
-        ))
+        # connections.append(matplot.x_i.on_changed(
+        #     lambda v, f=filename: self.update_x_i(v, f)
+        # ))
         connections.append(matplot.threshold.on_changed(
             lambda v, f=filename: self.update_threshold(v, f)
         ))
@@ -596,7 +637,7 @@ class SpeAnalyzer:
         self.root_threshold = tk.IntVar()
 
         self.root_cmap_bnir.set('gray')
-        self.root_cmap_fnir.set('gist_earth')
+        self.root_cmap_fnir.set('bone')
         self.root_threshold.set(0)
 
         # Root Window Setup

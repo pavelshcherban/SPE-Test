@@ -23,6 +23,7 @@ from colorplot import colorplot
 from pyWinSpec.winspec import SpeFile
 from spematplot import spematplot
 from WinSpecFrame import WinSpecFrame
+import argparse
 
 # global variables
 CMAPS = [
@@ -568,7 +569,7 @@ class SpeAnalyzer:
     def on_mousewheel(self, event):
         self.listcanvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
-    def __init__(self, root):
+    def __init__(self, root, filenames=None):
         # properties
         self.files = {}
         self.windows = {}
@@ -683,9 +684,28 @@ class SpeAnalyzer:
         )
         self.listcanvas.configure(yscrollcommand=self.listvscroll.set)
         root.bind_all('<MouseWheel>', self.on_mousewheel)
+        
+        if filenames:
+            self.read_files(filenames)
 
+def init_argparse() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [OPTION] [FILE]...",
+        description="Analyze SPE files."
+    )
+    parser.add_argument(
+        "-v", "--version", action="version",
+        version = f"{parser.prog} version 0.1.0"
+    )
+    parser.add_argument('files', nargs='*')
+    return parser
 
-
-root = tk.Tk()
-SpeAnalyzer(root)
-root.mainloop()
+if __name__ == "__main__":
+    parser = init_argparse()
+    args = parser.parse_args()
+    root = tk.Tk()
+    if not args.files:
+        SpeAnalyzer(root)
+    else:
+        SpeAnalyzer(root, args.files)
+    root.mainloop()

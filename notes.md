@@ -9,10 +9,9 @@
 - Mousewheel scrolling may only work on Windows: https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
 
 ## Features
-- alternative save option: save output files to specific folder
 - select arbitrary pixel, that may not be absolute maximum
-- max point decay over time
 - save chosen datapoints to csv
+- max point decay over time
 - save header export information
 - change median filtering with toggle to reduce noise in 'virdis' colormap.
 

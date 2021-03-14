@@ -1,6 +1,7 @@
 import tkinter as tk
 from math import floor
 from os import path
+import time
 from tkinter import IntVar, filedialog, ttk
 from tkinter.constants import ANCHOR
 
@@ -531,48 +532,83 @@ class SpeAnalyzer:
             print(event.inaxes.get_title())
         # key_press_handler(event, canvas, toolbar)
 
-    def output_all_tiff(self):
+    def output_all_tiff(self, folder=False):
+        base = None
+        if folder:
+            base = filedialog.askdirectory(
+                initialdir=".",
+                title="Save All to Folder",
+                mustexist=True,
+            )
         for filename, file in self.files.items():
-            # filehead, filename = path.split(img.path)
-            # if filename.endswith('bNIR.SPE'):
-            #     cmap = self.root_cmap_bnir.get()
-            # else:
-            #     cmap = self.root_cmap_fnir.get()
-            root_path = path.splitext(filename)[0]
+            head, tail = path.split(filename)
+            if folder:
+                head = base
+            name, ext = path.splitext(tail)
             cm = self.files[filename]['cmap'].get()
-            outpath = root_path + '-' + cm
-            self.output_orig(filename, outpath)
-            self.output_mod(filename, outpath)
+            name += '-' + cm
+            self.output_tiff(filename, head, name, 'img')
+            self.output_tiff(filename, head, name, 'mod')
             # plt.imsave(out_path, img_cm, origin='lower')
 
-    def output_mod(self, filename, outpath):
-            mod = self.files[filename]['mod']
-            # Store location of 0 values for alpha later.
-            zeroes = (mod == 0)
-            sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
-            mod = sm.to_rgba(mod)
-            # Set alpha to 0 for excluded values.
-            mod[zeroes, 3] = 0
-            dest = outpath + '-' + 'mod' + '.tiff'
-            print("Outputing ", dest, " ...")
-            plt.imsave(
-                dest,
-                mod, 
-                origin = 'lower',
-            )
+    @staticmethod
+    def add_timeext(filename):
+        timeext = time.strftime("%Y-%m-%d_%H-%M-%S%z", time.localtime())
+        return filename + '_' + timeext
 
-    def output_orig(self, filename, outpath):
-            img = self.files[filename]['img']
-            # Store location of 0 values for alpha later.
+    def output_tiff(self, filename, head, name, style):
+            # Build image data
+            img = self.files[filename][style]
+            zeroes =  None
+            if style == 'mod':
+                # Store location of 0 values for alpha later.
+                zeroes = (img == 0)
             sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
             img = sm.to_rgba(img)
-            dest = outpath + '-' + 'orig' + '.tiff'
+            if style == 'mod':
+                # Set alpha to 0 for excluded values.
+                img[zeroes, 3] = 0
+
+            # Build final file path
+            name += '-' + style
+            name = SpeAnalyzer.add_timeext(name)
+            name += '.tiff'
+            dest = path.join(head,name)
             print("Outputing ", dest, " ...")
             plt.imsave(
                 dest,
                 img, 
                 origin = 'lower',
             )
+
+    # def output_mod(self, filename, outpath):
+    #         mod = self.files[filename]['mod']
+    #         # Store location of 0 values for alpha later.
+    #         zeroes = (mod == 0)
+    #         sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
+    #         mod = sm.to_rgba(mod)
+    #         # Set alpha to 0 for excluded values.
+    #         mod[zeroes, 3] = 0
+    #         dest = outpath + '-' + 'mod' + '.tiff'
+    #         print("Outputing ", dest, " ...")
+    #         plt.imsave(
+    #             dest,
+    #             mod, 
+    #             origin = 'lower',
+    #         )
+
+    # def output_orig(self, filename, outpath):
+    #         img = self.files[filename]['img']
+    #         # Store location of 0 values for alpha later.
+    #         sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
+    #         img = sm.to_rgba(img)
+    #         dest = outpath + '-' + 'orig' + '.tiff'
+    #         print("Outputing ", dest, " ...")
+    #         plt.imsave(
+    #             dest,
+    #             img, 
+    #             origin = 'lower',
+    #         )
 
     def output_comb_tiff(self):
         return
@@ -666,6 +702,11 @@ class SpeAnalyzer:
             text="Output All tiff",
             command=self.output_all_tiff
         ).grid(row=2, column=0, columnspan=2)
+        ttk.Button(
+            self.mainframe,
+            text="Output All tiff to Folder",
+            command=lambda folder=True: self.output_all_tiff(folder),
+        ).grid(row=3, column=0, columnspan=2)
         # ttk.Button(
         #     self.mainframe,
         #     text="Unfinished - Plot Thresholds",

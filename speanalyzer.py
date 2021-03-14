@@ -532,7 +532,7 @@ class SpeAnalyzer:
             print(event.inaxes.get_title())
         # key_press_handler(event, canvas, toolbar)
 
-    def output_all_tiff(self, folder=False):
+    def output_all_tiff(self, style=None, folder=False):
         base = None
         if folder:
             base = filedialog.askdirectory(
@@ -547,8 +547,11 @@ class SpeAnalyzer:
             name, ext = path.splitext(tail)
             cm = self.files[filename]['cmap'].get()
             name += '-' + cm
-            self.output_tiff(filename, head, name, 'img')
-            self.output_tiff(filename, head, name, 'mod')
+            if style:
+                self.output_tiff(filename, head, name, style)
+            else:
+                self.output_tiff(filename, head, name, 'img')
+                self.output_tiff(filename, head, name, 'mod')
             # plt.imsave(out_path, img_cm, origin='lower')
 
     @staticmethod
@@ -697,16 +700,48 @@ class SpeAnalyzer:
             text="Show MatPlots",
             command=self.show_matplots
         ).grid(row=1, column=0, columnspan=2)
+        ttk.Separator(
+            self.mainframe,
+            orient=tk.HORIZONTAL,
+            ).grid(row=10, column=0, sticky=tk.W+tk.E)
+        ttk.Label(
+            self.mainframe,
+            text = "Tiff image output options"
+        ).grid(row=11, column=0, columnspan=2)
         ttk.Button(
             self.mainframe,
-            text="Output All tiff",
+            text="Originals only",
+            command=lambda style='img': self.output_all_tiff(style=style),
+        ).grid(row=12, column=0)
+        ttk.Button(
+            self.mainframe,
+            text="Originals only to Folder",
+            command=lambda style='img',folder=True: self.output_all_tiff(style=style, folder=folder),
+        ).grid(row=12, column=1)
+        ttk.Button(
+            self.mainframe,
+            text="Modified only",
+            command=lambda style='mod': self.output_all_tiff(style=style),
+        ).grid(row=13, column=0)
+        ttk.Button(
+            self.mainframe,
+            text="Modified only to Folder",
+            command=lambda style='mod',folder=True: self.output_all_tiff(style=style, folder=folder),
+        ).grid(row=13, column=1)
+        ttk.Button(
+            self.mainframe,
+            text="Both",
             command=self.output_all_tiff
-        ).grid(row=2, column=0, columnspan=2)
+        ).grid(row=14, column=0)
         ttk.Button(
             self.mainframe,
-            text="Output All tiff to Folder",
-            command=lambda folder=True: self.output_all_tiff(folder),
-        ).grid(row=3, column=0, columnspan=2)
+            text="Both to Folder",
+            command=lambda folder=True: self.output_all_tiff(folder=folder),
+        ).grid(row=14, column=1)
+        ttk.Separator(
+            self.mainframe,
+            orient=tk.HORIZONTAL,
+            ).grid(row=15, column=0, sticky=tk.W+tk.E)
         # ttk.Button(
         #     self.mainframe,
         #     text="Unfinished - Plot Thresholds",

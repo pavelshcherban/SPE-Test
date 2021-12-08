@@ -26,7 +26,9 @@ from colorplot import colorplot
 from pyWinSpec.winspec import SpeFile
 from spematplot import spematplot
 from WinSpecFrame import WinSpecFrame
+from output import Output
 import argparse
+
 
 # global variables
 CMAPS = [
@@ -532,93 +534,6 @@ class SpeAnalyzer:
             print(event.inaxes.get_title())
         # key_press_handler(event, canvas, toolbar)
 
-    def output_all_tiff(self, style=None, folder=False):
-        base = None
-        if folder:
-            base = filedialog.askdirectory(
-                initialdir=".",
-                title="Save All to Folder",
-                mustexist=True,
-            )
-        for filename, file in self.files.items():
-            head, tail = path.split(filename)
-            if folder:
-                head = base
-            name, ext = path.splitext(tail)
-            cm = self.files[filename]['cmap'].get()
-            name += '-' + cm
-            if style:
-                self.output_tiff(filename, head, name, style)
-            else:
-                self.output_tiff(filename, head, name, 'img')
-                self.output_tiff(filename, head, name, 'mod')
-            # plt.imsave(out_path, img_cm, origin='lower')
-
-    @staticmethod
-    def add_timeext(filename):
-        timeext = time.strftime("%Y-%m-%d_%H-%M-%S%z", time.localtime())
-        return filename + '_' + timeext
-
-    def output_tiff(self, filename, head, name, style):
-            # Build image data
-            img = self.files[filename][style]
-            zeroes =  None
-            if style == 'mod':
-                # Store location of 0 values for alpha later.
-                zeroes = (img == 0)
-            sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
-            img = sm.to_rgba(img)
-            if style == 'mod':
-                # Set alpha to 0 for excluded values.
-                img[zeroes, 3] = 0
-
-            # Build final file path
-            name += '-' + style
-            name = SpeAnalyzer.add_timeext(name)
-            name += '.tiff'
-            dest = path.join(head,name)
-            print("Outputing ", dest, " ...")
-            plt.imsave(
-                dest,
-                img, 
-                origin = 'lower',
-            )
-
-    # def output_mod(self, filename, outpath):
-    #         mod = self.files[filename]['mod']
-    #         # Store location of 0 values for alpha later.
-    #         zeroes = (mod == 0)
-    #         sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
-    #         mod = sm.to_rgba(mod)
-    #         # Set alpha to 0 for excluded values.
-    #         mod[zeroes, 3] = 0
-    #         dest = outpath + '-' + 'mod' + '.tiff'
-    #         print("Outputing ", dest, " ...")
-    #         plt.imsave(
-    #             dest,
-    #             mod, 
-    #             origin = 'lower',
-    #         )
-
-    # def output_orig(self, filename, outpath):
-    #         img = self.files[filename]['img']
-    #         # Store location of 0 values for alpha later.
-    #         sm = cm.ScalarMappable(cmap=self.files[filename]['cmap'].get())
-    #         img = sm.to_rgba(img)
-    #         dest = outpath + '-' + 'orig' + '.tiff'
-    #         print("Outputing ", dest, " ...")
-    #         plt.imsave(
-    #             dest,
-    #             img, 
-    #             origin = 'lower',
-    #         )
-
-    def output_comb_tiff(self):
-        return
-
-    def output_combalph_tiff(self):
-        return
-
     def show_thresholds(self):
         wsf = self.images[self.image_i].get_frame()
         filters.try_all_threshold(
@@ -700,6 +615,11 @@ class SpeAnalyzer:
             text="Show MatPlots",
             command=self.show_matplots
         ).grid(row=1, column=0, columnspan=2)
+        ttk.Button(
+            self.mainframe,
+            text="Output CSV",
+            command=lambda: Output.output_csv(self.files),
+        ).grid(row=2, column=0, columnspan=2)
         ttk.Separator(
             self.mainframe,
             orient=tk.HORIZONTAL,
@@ -711,32 +631,32 @@ class SpeAnalyzer:
         ttk.Button(
             self.mainframe,
             text="Originals only",
-            command=lambda style='img': self.output_all_tiff(style=style),
+            command=lambda: Output.output_all_tiff(self.files, style='img'),
         ).grid(row=12, column=0)
         ttk.Button(
             self.mainframe,
             text="Originals only to Folder",
-            command=lambda style='img',folder=True: self.output_all_tiff(style=style, folder=folder),
+            command=lambda: Output.output_all_tiff(self.files, style='img', folder=True),
         ).grid(row=12, column=1)
         ttk.Button(
             self.mainframe,
             text="Modified only",
-            command=lambda style='mod': self.output_all_tiff(style=style),
+            command=lambda: Output.output_all_tiff(self.files, style='mod'),
         ).grid(row=13, column=0)
         ttk.Button(
             self.mainframe,
             text="Modified only to Folder",
-            command=lambda style='mod',folder=True: self.output_all_tiff(style=style, folder=folder),
+            command=lambda: Output.output_all_tiff(self.files, style='mod', folder=True),
         ).grid(row=13, column=1)
         ttk.Button(
             self.mainframe,
             text="Both",
-            command=self.output_all_tiff
+            command=lambda: Output.output_all_tiff(self.files),
         ).grid(row=14, column=0)
         ttk.Button(
             self.mainframe,
             text="Both to Folder",
-            command=lambda folder=True: self.output_all_tiff(folder=folder),
+            command=lambda: Output.output_all_tiff(self.files, folder=True),
         ).grid(row=14, column=1)
         ttk.Separator(
             self.mainframe,

@@ -9,13 +9,13 @@
 - Mousewheel scrolling may only work on Windows: https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
 
 ## Features
-- select arbitrary pixel, that may not be absolute maximum
 - save chosen datapoints to csv
-- max point decay over time
-- save header export information
-- change median filtering with toggle to reduce noise in 'virdis' colormap.
+    - convert absolute time to relative in seconds
+    - have to account for date rollover
 
 - regional intensities by manual selection
+    - then sum the intensities and presnet csv output over time, like single point selection
 - region calculation from intensities
 - statistical significance (p-value)
 - combining images
+- change median filtering with toggle to reduce noise in 'virdis' colormap.

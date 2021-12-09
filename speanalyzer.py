@@ -15,6 +15,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button as mpButton
 from matplotlib.widgets import PolygonSelector, Slider
+from matplotlib.path import Path as mpPath
 from mpl_toolkits.axes_grid1 import ImageGrid
 from scipy import ndimage
 from skimage import color, filters, util
@@ -75,6 +76,8 @@ class SpeAnalyzer:
         f = self.files[filename]
         img = f['img']
         mod = np.where(img > f['threshold'].get(), img, 0)
+        # For displaying selected polygon instead
+        # mod = img * f['polyMask']
         f['mod'] = mod
         # ax_mod.imshow(wsf.image_raw(),
         #  cmap='jet', 
@@ -117,6 +120,8 @@ class SpeAnalyzer:
         # print(file['img'][file['relmax'][0]][file['relmax'][1]])
         stren = floor(np.amax(file['img']))
         file['max_strength'].set(stren)
+        frameSum = np.sum(file['img'])
+        file['frameSum'].set(frameSum)
         ind = np.argmax(file['img'])
         x,y = np.unravel_index(ind, file['img'].shape)
         file['max_x'].set(x)
@@ -159,6 +164,8 @@ class SpeAnalyzer:
                 max_x = tk.IntVar()
                 max_y = tk.IntVar()
                 order = tk.IntVar()
+                frameSum = tk.IntVar()
+                polySum = tk.IntVar()
                 # Update instance dicts.
                 self.windows[filename] = {}
                 self.files[filename] = {
@@ -174,6 +181,9 @@ class SpeAnalyzer:
                     'max_strength' : max_strength,
                     'max_x' : max_x,
                     'max_y' : max_y,
+                    'frameSum': frameSum,
+                    'polyMask': np.ones((320, 256), dtype=np.uint8),
+                    'polySum': polySum,
                 }
                 x_i.trace_add(
                     'write',
@@ -250,10 +260,18 @@ class SpeAnalyzer:
                 ).grid(row=2, column=0)
             ttk.Label(details, textvariable=f['frame_i']
                 ).grid(row=2, column=1)
+            ttk.Label(details, text="Whole Frame Sum: "
+                ).grid(row=2, column=2)
+            ttk.Label(details, textvariable=f['frameSum']
+                ).grid(row=2, column=3)
             ttk.Label(details, text="Current threshold: "
                 ).grid(row=3, column=0)
             ttk.Label(details, textvariable=f['threshold']
                 ).grid(row=3, column=1)
+            ttk.Label(details, text="Selected Region Sum: "
+                ).grid(row=3, column=2)
+            ttk.Label(details, textvariable=f['polySum']
+                ).grid(row=3, column=3)
             ttk.Label(details, text="Max Strength: "
                 ).grid(row=4, column=0)
             ttk.Label(details, textvariable=f['max_strength']
@@ -370,8 +388,27 @@ class SpeAnalyzer:
         matplot = self.windows[filename]['spematplot']['matplot']
         # print(filename)
         # print(vertices)
+        print("Saving Polygon vertices: ", vertices)
         f['poly_verts'] = vertices
+        r = []
+        c = []
+        for (x,y) in vertices:
+            r.append(x)
+            c.append(y)
+        npR = np.array(r)
+        npC = np.array(c)
+        rr, cc = polygon(npR, npC)
+        polyMask = np.zeros((320, 256), dtype=np.uint8)
+        polyMask[cc, rr] = 1
+        f['polyMask'] = polyMask
+        img = f['img']
+        polySum = np.sum(img * polyMask)
+        print("Updating Polygon sum: ", polySum)
+        f['polySum'].set(polySum)
+        # mod = np.where(img > f['threshold'].get(), img, 0)
+        # print("polyMask: ", polyMask)
         # Save polygon and remove PolygonSelector.
+        # Put in select_poly???
         # matplot.poly.disconnect_events()
 
     def select_poly(self, filename):

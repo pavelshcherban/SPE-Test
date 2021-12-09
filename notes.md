@@ -19,3 +19,5 @@
 - statistical significance (p-value)
 - combining images
 - change median filtering with toggle to reduce noise in 'virdis' colormap.
+- remove old region when selecting new one.
+- consider frame change and affects on Poly components

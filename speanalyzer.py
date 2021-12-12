@@ -258,43 +258,45 @@ class SpeAnalyzer:
                 ).grid(row=1, column=1)
             ttk.Label(details, text="Current Frame: "
                 ).grid(row=2, column=0)
-            ttk.Label(details, textvariable=f['frame_i']
+            ttk.Entry(details, textvariable=f['frame_i'], state="readonly"
                 ).grid(row=2, column=1)
             ttk.Label(details, text="Whole Frame Sum: "
                 ).grid(row=2, column=2)
-            ttk.Label(details, textvariable=f['frameSum']
+            # ttk.Label(details, textvariable=f['frameSum']
+            #     ).grid(row=2, column=3)
+            ttk.Entry(details, textvariable=f['frameSum'], state="readonly"
                 ).grid(row=2, column=3)
             ttk.Label(details, text="Current threshold: "
                 ).grid(row=3, column=0)
-            ttk.Label(details, textvariable=f['threshold']
+            ttk.Entry(details, textvariable=f['threshold'], state="readonly"
                 ).grid(row=3, column=1)
             ttk.Label(details, text="Selected Region Sum: "
                 ).grid(row=3, column=2)
-            ttk.Label(details, textvariable=f['polySum']
+            ttk.Entry(details, textvariable=f['polySum'], state="readonly"
                 ).grid(row=3, column=3)
             ttk.Label(details, text="Max Strength: "
                 ).grid(row=4, column=0)
-            ttk.Label(details, textvariable=f['max_strength']
+            ttk.Entry(details, textvariable=f['max_strength'], state="readonly"
                 ).grid(row=4, column=1)
             ttk.Label(details, text="Max x_index: "
                 ).grid(row=4, column=2)
-            ttk.Label(details, textvariable=f['max_x']
+            ttk.Entry(details, textvariable=f['max_x'], state="readonly"
                 ).grid(row=4, column=3)
             ttk.Label(details, text="Max y_index: "
                 ).grid(row=4, column=4)
-            ttk.Label(details, textvariable=f['max_y']
+            ttk.Entry(details, textvariable=f['max_y'], state="readonly"
                 ).grid(row=4, column=5)
             ttk.Label(details, text="Selected Strength: "
                 ).grid(row=5, column=0)
-            ttk.Label(details, textvariable=f['sel_strength']
+            ttk.Entry(details, textvariable=f['sel_strength'], state="readonly"
                 ).grid(row=5, column=1)
             ttk.Label(details, text="Selected x_index: "
                 ).grid(row=5, column=2)
-            ttk.Label(details, textvariable=f['x_i']
+            ttk.Entry(details, textvariable=f['x_i'], state="readonly"
                 ).grid(row=5, column=3)
             ttk.Label(details, text="Selected y_index: "
                 ).grid(row=5, column=4)
-            ttk.Label(details, textvariable=f['y_i']
+            ttk.Entry(details, textvariable=f['y_i'], state="readonly"
                 ).grid(row=5, column=5)
             ttk.Label(details, text="Current colormap: "
                 ).grid(row=7, column=0)
